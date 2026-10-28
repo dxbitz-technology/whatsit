@@ -175,6 +175,19 @@ def queue(
     )
     doc.flags.internal_update = True
     doc.insert(ignore_permissions=True)
+    if media_file:
+        # Link a private attachment record to this message so all permitted operators can read it.
+        attachment = frappe.get_doc(
+            {
+                "doctype": "File",
+                "file_name": file.file_name,
+                "content": content,
+                "is_private": 1,
+                "attached_to_doctype": "WhatsApp Message",
+                "attached_to_name": doc.name,
+            }
+        ).insert(ignore_permissions=True)
+        doc.db_set("media_file", attachment.name)
     record(doc)
     frappe.enqueue("whatsit.jobs.dispatch.send", message=doc.name, enqueue_after_commit=True)
     return result(doc)

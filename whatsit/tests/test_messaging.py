@@ -58,6 +58,16 @@ class TestMessaging(FrappeTestCase):
     def tearDown(self):
         frappe.set_user("Administrator")
         # Dispatch deliberately commits its claim. Explicit cleanup keeps repeat runs isolated.
+        message_names = frappe.get_all(
+            "WhatsApp Message", filters={"sender": ["in", [self.number.name, self.second.name]]}, pluck="name"
+        )
+        for attachment in frappe.get_all(
+            "File",
+            filters={"attached_to_doctype": "WhatsApp Message", "attached_to_name": ["in", message_names]},
+            pluck="name",
+        ):
+            frappe.db.set_value("WhatsApp Message", {"media_file": attachment}, "media_file", None)
+            frappe.delete_doc("File", attachment, force=True)
         for dt in [
             "WhatsApp API Log",
             "WhatsApp Message",
@@ -417,6 +427,8 @@ class TestMessaging(FrappeTestCase):
         self.assertIn(self.number.name, visible)
         self.assertNotIn(self.second.name, visible)
         doc = frappe.get_doc("WhatsApp Number", self.number.name)
+        self.assertTrue(doc.has_permission("read"))
+        self.assertFalse(frappe.get_doc("WhatsApp Number", self.second.name).has_permission("read"))
         doc.apply_fieldlevel_read_permissions()
         self.assertFalse(doc.get("access_token"))
         self.assertFalse(doc.get("allowed_users"))
@@ -730,3 +742,80 @@ class TestMessaging(FrappeTestCase):
         self.assertEqual(
             frappe.db.get_value("WhatsApp Number", self.number.name, "connection_status"), "Failed"
         )
+
+    def test_outgoing_attachment_shared_with_sender_operators(self):
+        self.inbound()
+        file = frappe.get_doc(
+            {"doctype": "File", "file_name": "operator-invoice.pdf", "is_private": 1, "content": self.pdf()}
+        ).insert()
+        result = send_media(self.number.name, "+971509876543", file.name, "Invoice")
+        linked = frappe.db.get_value("WhatsApp Message", result["message_id"], "media_file")
+        self.assertNotEqual(linked, file.name)
+        self.assertEqual(frappe.db.get_value("File", linked, "attached_to_name"), result["message_id"])
+        user = self.make_user()
+        self.number.append("allowed_users", {"user": user})
+        self.number.save()
+        frappe.set_user(user)
+        thread = conversations.thread(self.number.name, "+971509876543")
+        self.assertTrue(next(m for m in thread["messages"] if m.name == result["message_id"]).attachment)
+        frappe.set_user("Administrator")
+        frappe.delete_doc("File", file.name)
+
+    def test_signed_webhook_worker_can_run_as_guest(self):
+        payload = {
+            "object": "whatsapp_business_account",
+            "entry": [
+                {
+                    "id": "2001",
+                    "changes": [
+                        {
+                            "field": "messages",
+                            "value": {
+                                "metadata": {"phone_number_id": self.number.meta_phone_number_id},
+                                "messages": [
+                                    {
+                                        "id": "guest-worker-pdf",
+                                        "from": "971509876543",
+                                        "timestamp": "1793188800",
+                                        "type": "document",
+                                        "document": {"id": "12345"},
+                                    }
+                                ],
+                            },
+                        }
+                    ],
+                }
+            ],
+        }
+        event = frappe.get_doc(
+            {
+                "doctype": "WhatsApp Webhook Event",
+                "meta_app": self.app.name,
+                "event_key": "guest-worker",
+                "payload": json.dumps(payload),
+                "received_at": now_datetime(),
+                "processing_status": "Queued",
+            }
+        ).insert()
+        pdf = self.pdf()
+        frappe.set_user("Guest")
+        with (
+            patch(
+                "whatsit.services.meta_client.MetaClient.request",
+                return_value={
+                    "url": "https://lookaside.fbsbx.com/media",
+                    "mime_type": "application/pdf",
+                    "file_size": len(pdf),
+                },
+            ),
+            patch("whatsit.services.meta_client.MetaClient.download", return_value=pdf),
+        ):
+            webhook_processor.process(event.name)
+        self.assertEqual(
+            frappe.db.get_value("WhatsApp Webhook Event", event.name, "processing_status"), "Processed"
+        )
+        file_name = frappe.db.get_value(
+            "WhatsApp Message", {"meta_message_id": "guest-worker-pdf"}, "media_file"
+        )
+        self.assertTrue(file_name)
+        self.assertFalse(frappe.get_doc("File", file_name).has_permission("read"))
