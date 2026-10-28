@@ -1,0 +1,49 @@
+{
+  "doctype": "DocType",
+  "name": "WhatsApp Template Button",
+  "module": "Whatsit",
+  "engine": "InnoDB",
+  "istable": 1,
+  "field_order": [
+    "type",
+    "text",
+    "url",
+    "phone_number",
+    "sample_value"
+  ],
+  "fields": [
+    {
+      "fieldname": "type",
+      "label": "Type",
+      "fieldtype": "Select",
+      "options": "QUICK_REPLY\nURL\nPHONE_NUMBER",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "text",
+      "label": "Text",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "url",
+      "label": "URL",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "phone_number",
+      "label": "Phone Number",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "sample_value",
+      "label": "Sample",
+      "fieldtype": "Data"
+    }
+  ],
+  "permissions": [],
+  "track_changes": 0,
+  "autoname": "hash"
+}

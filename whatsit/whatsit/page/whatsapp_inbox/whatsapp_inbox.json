@@ -1,0 +1,16 @@
+{
+  "doctype": "Page",
+  "name": "whatsapp-inbox",
+  "page_name": "whatsapp-inbox",
+  "module": "Whatsit",
+  "title": "WhatsApp Inbox",
+  "standard": "Yes",
+  "roles": [
+    {
+      "role": "WhatsApp Manager"
+    },
+    {
+      "role": "WhatsApp User"
+    }
+  ]
+}

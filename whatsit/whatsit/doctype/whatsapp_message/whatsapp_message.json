@@ -1,0 +1,243 @@
+{
+  "doctype": "DocType",
+  "name": "WhatsApp Message",
+  "module": "Whatsit",
+  "engine": "InnoDB",
+  "istable": 0,
+  "field_order": [
+    "direction",
+    "sender",
+    "remote_number",
+    "party_type",
+    "party",
+    "conversation",
+    "message_type",
+    "text",
+    "template",
+    "template_parameters_json",
+    "media_file",
+    "meta_media_id",
+    "meta_message_id",
+    "status",
+    "error_code",
+    "error_details",
+    "sent_at",
+    "delivered_at",
+    "read_at",
+    "received_at",
+    "reference_doctype",
+    "reference_name",
+    "retry_count",
+    "last_attempt_at",
+    "next_attempt_at",
+    "idempotency_key",
+    "request_hash",
+    "requested_by",
+    "request_payload"
+  ],
+  "fields": [
+    {
+      "fieldname": "direction",
+      "label": "Direction",
+      "fieldtype": "Select",
+      "options": "Incoming\nOutgoing",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "sender",
+      "label": "Sender",
+      "fieldtype": "Link",
+      "options": "WhatsApp Number",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "remote_number",
+      "label": "Recipient",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "party_type",
+      "label": "Party Type",
+      "fieldtype": "Link",
+      "options": "DocType"
+    },
+    {
+      "fieldname": "party",
+      "label": "Party",
+      "fieldtype": "Dynamic Link",
+      "options": "party_type"
+    },
+    {
+      "fieldname": "conversation",
+      "label": "Conversation",
+      "fieldtype": "Link",
+      "options": "WhatsApp Conversation"
+    },
+    {
+      "fieldname": "message_type",
+      "label": "Type",
+      "fieldtype": "Select",
+      "options": "Text\nTemplate\nImage\nDocument",
+      "reqd": 1
+    },
+    {
+      "fieldname": "text",
+      "label": "Message",
+      "fieldtype": "Text"
+    },
+    {
+      "fieldname": "template",
+      "label": "Template",
+      "fieldtype": "Link",
+      "options": "WhatsApp Template"
+    },
+    {
+      "fieldname": "template_parameters_json",
+      "label": "Template Values",
+      "fieldtype": "Code",
+      "options": "JSON"
+    },
+    {
+      "fieldname": "media_file",
+      "label": "Attachment",
+      "fieldtype": "Link",
+      "options": "File"
+    },
+    {
+      "fieldname": "meta_media_id",
+      "label": "Meta Media ID",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "meta_message_id",
+      "label": "Meta Message ID",
+      "fieldtype": "Data",
+      "unique": 1
+    },
+    {
+      "fieldname": "status",
+      "label": "Status",
+      "fieldtype": "Select",
+      "options": "Queued\nSending\nSent\nDelivered\nRead\nFailed\nReceived\nUnknown",
+      "default": "Queued",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "error_code",
+      "label": "Error Code",
+      "fieldtype": "Data"
+    },
+    {
+      "fieldname": "error_details",
+      "label": "Error",
+      "fieldtype": "Small Text"
+    },
+    {
+      "fieldname": "sent_at",
+      "label": "Sent At",
+      "fieldtype": "Datetime"
+    },
+    {
+      "fieldname": "delivered_at",
+      "label": "Delivered At",
+      "fieldtype": "Datetime"
+    },
+    {
+      "fieldname": "read_at",
+      "label": "Read At",
+      "fieldtype": "Datetime"
+    },
+    {
+      "fieldname": "received_at",
+      "label": "Received At",
+      "fieldtype": "Datetime"
+    },
+    {
+      "fieldname": "reference_doctype",
+      "label": "Reference Type",
+      "fieldtype": "Link",
+      "options": "DocType"
+    },
+    {
+      "fieldname": "reference_name",
+      "label": "Reference",
+      "fieldtype": "Dynamic Link",
+      "options": "reference_doctype"
+    },
+    {
+      "fieldname": "retry_count",
+      "label": "Retries",
+      "fieldtype": "Int",
+      "default": 0
+    },
+    {
+      "fieldname": "last_attempt_at",
+      "label": "Last Attempt",
+      "fieldtype": "Datetime"
+    },
+    {
+      "fieldname": "next_attempt_at",
+      "label": "Next Attempt",
+      "fieldtype": "Datetime"
+    },
+    {
+      "fieldname": "idempotency_key",
+      "label": "Request Key",
+      "fieldtype": "Data",
+      "unique": 1
+    },
+    {
+      "fieldname": "request_hash",
+      "label": "Request Hash",
+      "fieldtype": "Data",
+      "hidden": 1
+    },
+    {
+      "fieldname": "requested_by",
+      "label": "Requested By",
+      "fieldtype": "Link",
+      "options": "User"
+    },
+    {
+      "fieldname": "request_payload",
+      "label": "Request Payload",
+      "fieldtype": "Code",
+      "options": "JSON",
+      "permlevel": 1
+    }
+  ],
+  "permissions": [
+    {
+      "role": "WhatsApp Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "report": 1,
+      "export": 1,
+      "share": 0
+    },
+    {
+      "role": "WhatsApp Manager",
+      "permlevel": 1,
+      "read": 1,
+      "write": 1
+    },
+    {
+      "role": "WhatsApp User",
+      "read": 1,
+      "select": 1
+    },
+    {
+      "role": "WhatsApp API User",
+      "read": 1,
+      "select": 1
+    }
+  ],
+  "track_changes": 0,
+  "autoname": "hash"
+}

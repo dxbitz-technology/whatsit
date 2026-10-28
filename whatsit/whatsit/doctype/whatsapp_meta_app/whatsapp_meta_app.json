@@ -1,0 +1,102 @@
+{
+  "doctype": "DocType",
+  "name": "WhatsApp Meta App",
+  "module": "Whatsit",
+  "engine": "InnoDB",
+  "istable": 0,
+  "field_order": [
+    "display_name",
+    "meta_app_id",
+    "app_secret",
+    "verify_token",
+    "enabled",
+    "route_key",
+    "webhook_url",
+    "webhook_verified_at",
+    "last_webhook_at"
+  ],
+  "fields": [
+    {
+      "fieldname": "display_name",
+      "label": "App Name",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "unique": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "meta_app_id",
+      "label": "Meta App ID",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "unique": 1
+    },
+    {
+      "fieldname": "app_secret",
+      "label": "App Secret",
+      "fieldtype": "Password",
+      "reqd": 1,
+      "permlevel": 1
+    },
+    {
+      "fieldname": "verify_token",
+      "label": "Verify Token",
+      "fieldtype": "Password",
+      "reqd": 1,
+      "permlevel": 1
+    },
+    {
+      "fieldname": "enabled",
+      "label": "Enabled",
+      "fieldtype": "Check",
+      "default": 1
+    },
+    {
+      "fieldname": "route_key",
+      "label": "Webhook Key",
+      "fieldtype": "Data",
+      "read_only": 1,
+      "hidden": 1,
+      "unique": 1
+    },
+    {
+      "fieldname": "webhook_url",
+      "label": "Webhook URL",
+      "fieldtype": "Small Text",
+      "read_only": 1
+    },
+    {
+      "fieldname": "webhook_verified_at",
+      "label": "Verified At",
+      "fieldtype": "Datetime",
+      "read_only": 1
+    },
+    {
+      "fieldname": "last_webhook_at",
+      "label": "Last Webhook",
+      "fieldtype": "Datetime",
+      "read_only": 1
+    }
+  ],
+  "permissions": [
+    {
+      "role": "WhatsApp Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "report": 1,
+      "export": 1,
+      "share": 0
+    },
+    {
+      "role": "WhatsApp Manager",
+      "permlevel": 1,
+      "read": 1,
+      "write": 1
+    }
+  ],
+  "track_changes": 0,
+  "autoname": "hash",
+  "title_field": "display_name"
+}

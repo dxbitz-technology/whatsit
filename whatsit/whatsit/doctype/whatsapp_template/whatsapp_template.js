@@ -1,0 +1,33 @@
+frappe.ui.form.on('WhatsApp Template', {
+    refresh(frm) {
+        if (frm.is_new() || !frappe.user.has_role('WhatsApp Manager')) return;
+        frm.add_custom_button(__('Sync Status'), async () => {
+            const sender = frm.doc.sender;
+            if (!sender) return frappe.msgprint(__('Select a sender first.'));
+            await whatsit.call('api.templates.sync', {from_number: sender}); frm.reload_doc();
+        });
+        frm.add_custom_button(__('Send Test Message'), () => whatsit.open_compose({sender: frm.doc.sender}));
+        if (!frm.doc.meta_template_id) frm.add_custom_button(__('Submit to Meta'), async () => {
+            if (frm.is_dirty()) await frm.save();
+            await whatsit.call('api.templates.submit', {template: frm.doc.name, from_number: frm.doc.sender}); frm.reload_doc();
+        });
+        else {
+            const editable = ['category','header_type','header_text','header_sample_handle','body','footer','variables','buttons'];
+            editable.concat(['template_name','language','waba_id']).forEach(key => frm.set_df_property(key, 'read_only', 1));
+            frm.add_custom_button(__('Edit at Meta'), () => {
+                const fields = editable.map(key => ({...frappe.meta.get_docfield(frm.doctype, key, frm.doc.name), default: frm.doc[key], read_only: 0}));
+                const dialog = new frappe.ui.Dialog({title: __('Edit Template at Meta'), size: 'large', fields,
+                    primary_action_label: __('Submit Changes'), primary_action: async values => {
+                        await whatsit.call('api.templates.edit', {template: frm.doc.name, changes: values, from_number: frm.doc.sender}); dialog.hide(); frm.reload_doc();
+                    }});
+                dialog.show();
+            });
+        }
+    },
+    async sender(frm) {
+        if (frm.doc.sender && !frm.doc.meta_template_id) {
+            const result = await frappe.db.get_value('WhatsApp Number', frm.doc.sender, 'waba_id');
+            frm.set_value('waba_id', result.message.waba_id);
+        }
+    }
+});

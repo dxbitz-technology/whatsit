@@ -1,0 +1,54 @@
+{
+  "doctype": "DocType",
+  "name": "WhatsApp Template Variable",
+  "module": "Whatsit",
+  "engine": "InnoDB",
+  "istable": 1,
+  "field_order": [
+    "component",
+    "parameter_index",
+    "parameter_name",
+    "sample_value",
+    "button_index"
+  ],
+  "fields": [
+    {
+      "fieldname": "component",
+      "label": "Section",
+      "fieldtype": "Select",
+      "options": "BODY\nHEADER\nBUTTON",
+      "default": "BODY",
+      "in_list_view": 1,
+      "reqd": 1
+    },
+    {
+      "fieldname": "parameter_index",
+      "label": "Position",
+      "fieldtype": "Int",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "parameter_name",
+      "label": "Name",
+      "fieldtype": "Data",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "sample_value",
+      "label": "Sample",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "button_index",
+      "label": "Button Position",
+      "fieldtype": "Int",
+      "default": 0
+    }
+  ],
+  "permissions": [],
+  "track_changes": 0,
+  "autoname": "hash"
+}

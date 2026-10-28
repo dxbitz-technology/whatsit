@@ -1,0 +1,16 @@
+{
+  "doctype": "Page",
+  "name": "whatsapp-compose",
+  "page_name": "whatsapp-compose",
+  "module": "Whatsit",
+  "title": "WhatsApp Compose",
+  "standard": "Yes",
+  "roles": [
+    {
+      "role": "WhatsApp Manager"
+    },
+    {
+      "role": "WhatsApp User"
+    }
+  ]
+}

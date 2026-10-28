@@ -1,0 +1,73 @@
+name: Tests
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install ruff==0.15.22
+      - run: ruff check whatsit && ruff format --check whatsit
+      - run: find whatsit -name '*.js' -exec node --check {} \;
+  integration:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - branch: version-15
+            python: '3.12'
+            node: '22'
+          - branch: version-16
+            python: '3.14'
+            node: '24'
+    services:
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: root
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libmariadb-dev pkg-config redis-tools
+          pip install frappe-bench
+          npm install -g yarn
+      - name: Create clean bench
+        run: |
+          bench init "$RUNNER_TEMP/test-bench" --frappe-branch "${{ matrix.branch }}" --python "$(which python)" --skip-assets --skip-redis-config-generation
+          cd "$RUNNER_TEMP/test-bench"
+          bench set-config -g redis_cache redis://127.0.0.1:6379/0
+          bench set-config -g redis_queue redis://127.0.0.1:6379/1
+          bench get-app "$GITHUB_WORKSPACE"
+          bench new-site test.localhost --db-root-password root --admin-password local-test-password --mariadb-user-host-login-scope '%'
+          bench --site test.localhost install-app whatsit
+          bench --site test.localhost set-config allow_tests true
+          bench --site test.localhost migrate
+          bench build --app whatsit
+      - name: Run integration tests
+        working-directory: ${{ runner.temp }}/test-bench
+        run: bench --site test.localhost run-tests --app whatsit
+      - name: Logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ matrix.branch }}
+          path: ${{ runner.temp }}/test-bench/logs/*
