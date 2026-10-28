@@ -7,6 +7,7 @@ const {test} = require('node:test');
 const frappePath = process.env.FRAPPE_SOURCE_PATH || path.resolve(__dirname, '../../../frappe');
 const gridSource = fs.readFileSync(path.join(frappePath, 'frappe/public/js/frappe/form/grid.js'), 'utf8')
     .replace(/^import .*;\r?\n/gm, '')
+    .replace(/^export (?=const\s)/gm, '')
     .replace('export default class Grid', 'globalThis.TemplateTestGrid = class Grid');
 
 function openEditor() {
