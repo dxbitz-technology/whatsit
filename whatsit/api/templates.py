@@ -29,6 +29,7 @@ def edit(template, changes, from_number=None):
         "buttons",
     }:
         frappe.throw("Only template content can be edited.")
+    doc.load_doc_before_save(raise_exception=True)
     doc.update(changes)
     doc.flags.meta_edit = True
     template_service.validate_template(doc)

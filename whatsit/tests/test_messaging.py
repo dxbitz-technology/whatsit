@@ -339,6 +339,77 @@ class TestMessaging(FrappeTestCase):
         with self.assertRaises(frappe.ValidationError):
             self.template.save()
 
+    def test_edit_submitted_template_through_api(self):
+        for status in ("APPROVED", "REJECTED"):
+            with self.subTest(status=status):
+                self.template.db_set({"meta_template_id": "3001", "status": status})
+                changes = {
+                    "body": "Good morning {{1}}",
+                    "variables": [{"component": "BODY", "parameter_index": 1, "sample_value": "Sam"}],
+                    "buttons": [
+                        {"type": "QUICK_REPLY", "text": "Yes"},
+                        {"type": "QUICK_REPLY", "text": "No"},
+                    ],
+                }
+                with patch(
+                    "whatsit.services.meta_client.MetaClient.request", return_value={"success": True}
+                ) as request:
+                    result = templates.edit(self.template.name, json.dumps(changes), self.number.name)
+                self.assertEqual(request.call_args.args, ("POST", "3001"))
+                payload = request.call_args.kwargs["json"]
+                self.assertNotIn("name", payload)
+                self.assertNotIn("language", payload)
+                self.assertEqual(payload["components"][0]["text"], changes["body"])
+                self.assertEqual(payload["components"][0]["example"], {"body_text": [["Sam"]]})
+                self.assertEqual(payload["components"][1]["buttons"], changes["buttons"])
+                self.template.reload()
+                self.assertEqual(result, {"name": self.template.name, "status": "PENDING"})
+                self.assertEqual(self.template.body, changes["body"])
+                self.assertEqual(self.template.variables[0].sample_value, "Sam")
+                self.assertEqual([row.text for row in self.template.buttons], ["Yes", "No"])
+
+    def test_edit_template_validates_before_meta_request(self):
+        self.template.db_set("meta_template_id", "3001")
+        with patch("whatsit.services.meta_client.MetaClient.request") as request:
+            with self.assertRaisesRegex(frappe.ValidationError, "Body supports 1024"):
+                templates.edit(self.template.name, {"body": "X" * 1025}, self.number.name)
+            with self.assertRaisesRegex(frappe.ValidationError, "Only template content"):
+                templates.edit(self.template.name, {"status": "APPROVED"}, self.number.name)
+        request.assert_not_called()
+        self.template.reload()
+        self.assertEqual(self.template.body, "Hello {{1}}")
+        self.assertEqual(self.template.status, "APPROVED")
+
+    def test_edit_template_keeps_saved_content_when_meta_rejects(self):
+        self.template.db_set("meta_template_id", "3001")
+        with patch(
+            "whatsit.services.meta_client.MetaClient.request", side_effect=MetaError("100")
+        ) as request:
+            with self.assertRaises(MetaError):
+                templates.edit(self.template.name, {"body": "Changed {{1}}"}, self.number.name)
+        request.assert_called_once()
+        self.template.reload()
+        self.assertEqual(self.template.body, "Hello {{1}}")
+        self.assertEqual(self.template.status, "APPROVED")
+        self.assertEqual(self.template.variables[0].sample_value, "Ahmed")
+
+    def test_edit_template_removes_deleted_child_rows(self):
+        self.template.db_set("meta_template_id", "3001")
+        with patch("whatsit.services.meta_client.MetaClient.request", return_value={"success": True}):
+            templates.edit(
+                self.template.name, {"buttons": [{"type": "QUICK_REPLY", "text": "Yes"}]}, self.number.name
+            )
+        with patch(
+            "whatsit.services.meta_client.MetaClient.request", return_value={"success": True}
+        ) as request:
+            templates.edit(
+                self.template.name, {"body": "Hello", "variables": [], "buttons": []}, self.number.name
+            )
+        self.template.reload()
+        self.assertEqual(self.template.variables, [])
+        self.assertEqual(self.template.buttons, [])
+        self.assertEqual(request.call_args.kwargs["json"]["components"], [{"type": "BODY", "text": "Hello"}])
+
     def test_unauthorized_and_guest(self):
         frappe.set_user("Guest")
         with self.assertRaises(frappe.PermissionError):
