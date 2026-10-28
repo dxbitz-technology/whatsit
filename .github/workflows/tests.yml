@@ -13,6 +13,7 @@ jobs:
       - run: pip install ruff==0.15.22
       - run: ruff check whatsit && ruff format --check whatsit
       - run: find whatsit -name '*.js' -exec node --check {} \;
+      - run: node --test whatsit/tests/test_template_editor.cjs
   integration:
     runs-on: ubuntu-latest
     strategy:

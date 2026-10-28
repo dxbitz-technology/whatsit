@@ -59,6 +59,8 @@ The inbox has two main tabs:
 
 Filter by sender or search by party, recipient or message. Open a thread to see delivery states, images and private PDFs. Closing a conversation is an operator action and does not change Meta's reply window.
 
+Conversations retain a party from message history only when that sender and recipient pair has one distinct party. Conflicting associations remain blank. Migration fills missing associations for existing conversations. Quick-reply answers retain their display text and a separate Reply Payload on the message.
+
 Text and media require an incoming message within the previous 24 hours. Outside that window, use an approved template. The server checks eligibility when queuing and again when dispatching.
 
 Compose supports manual international numbers and permission-checked party selection. Phone choices come from common phone fields and linked Contact phone rows. Values are normalized and deduplicated. Multiple choices require an explicit selection. Local numbers without a country code are omitted. Changing the party clears the recipient.
@@ -128,6 +130,8 @@ Templates belong to a WABA. Senders on the same WABA share them. Draft creation 
 
 Submitted templates cannot be edited locally. **Edit at Meta** submits changes as a Meta lifecycle operation and returns the record to the resulting status. Renaming or changing language requires a new draft. Rejection reasons, quality and status can arrive by webhook or hourly reconciliation. The editor does not promise Meta approval.
 
+Sync skips templates whose content cannot be imported, reports the skipped count, and records their Meta IDs in API Logs. An existing template with an import error cannot be sent until a successful sync clears the error. Other supported templates continue syncing.
+
 Create authentication templates in Meta's WhatsApp Manager, then sync them here. Templates containing unsupported button types are rejected by the send service. Flow, carousel, location and other interactive template formats are outside this MVP. Named parameters can be sent after import; the draft editor uses positional parameters.
 
 ## Webhook security and recovery
@@ -135,6 +139,8 @@ Create authentication templates in Meta's WhatsApp Manager, then sync them here.
 Every Meta App gets a random 256-bit route key in its callback URL. GET verification compares that app's verify token. POST first resolves the route key, then validates `X-Hub-Signature-256` against the raw body with that app's secret. Only afterward does processing read phone IDs. A phone number must match both the verified app and the WABA in the event. A signature valid for one app cannot update a number belonging to another app.
 
 Signed payloads are stored in manager-only Webhook Events and processed in the background. Exact payload fingerprints deduplicate events; Meta message IDs deduplicate incoming messages. Replaying an event is safe. Delivery receipts do not regress Read to Delivered. Receipts arriving before the dispatch job saves its Meta ID are retried.
+
+Attachment failures keep the received messages and conversations. The message shows an attachment error; transient downloads use the event's bounded retry schedule without duplicating messages or unread counts. Permanent attachment errors leave the event Failed for manager review and manual replay.
 
 Transient request failures use bounded exponential backoff, up to five retries. Validation and permission failures are permanent. A network interruption after a send may mean Meta accepted it. Such a message becomes **Unknown** and is not resent automatically. Review Meta before sending again. Worker claims interrupted for 15 minutes are also marked Unknown. Queue recovery runs every five minutes.
 
@@ -176,7 +182,9 @@ Whitelisted methods, prefixed with `whatsit.`:
 
 The automated suite covers real Frappe document creation and permissions with mocked Meta requests. It checks default selection, shared WABAs, template approval and sync, signed multi-app webhook routing, private attachments, party resolution, conversation grouping, reply windows, idempotency, status ordering and retry behavior. CI runs the suite on clean Frappe v15 and v16 MariaDB sites, without ERPNext.
 
-Local verification: 36 tests passed on both clean Frappe v15 and v16 MariaDB sites without ERPNext. Install and migrate passed on both versions. Inbox and compose pages were checked in browsers on both versions. The v16 conversation view and reply dialog were also checked.
+Current regression verification: 48 tests passed on Frappe v15 with MariaDB and Frappe v16 with SQLite, without ERPNext. Migration passed on both sites. Three template editor checks cover existing rows, additions, and intentional removals. Run them with `node --test whatsit/tests/test_template_editor.cjs`.
+
+The initial release also passed 36 tests on clean Frappe v15 and v16 MariaDB sites. Inbox and compose pages were checked in browsers on both versions, including the v16 conversation view and reply dialog.
 
 Live Meta delivery has not been verified without credentials. Before use, complete this checklist with your own Meta test number and permitted test recipient:
 

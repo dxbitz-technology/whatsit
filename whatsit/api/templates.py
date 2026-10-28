@@ -47,7 +47,7 @@ def approved(from_number):
     sender = resolve_sender(from_number)
     return frappe.get_list(
         "WhatsApp Template",
-        filters={"waba_id": sender.waba_id, "status": "APPROVED"},
+        filters={"waba_id": sender.waba_id, "status": "APPROVED", "sync_error": ["is", "not set"]},
         fields=["name", "template_name", "language", "body", "header_type"],
         limit_page_length=200,
     )
@@ -58,7 +58,7 @@ def details(template, from_number):
     require_user()
     sender = resolve_sender(from_number)
     doc = frappe.get_doc("WhatsApp Template", template)
-    if doc.waba_id != sender.waba_id or doc.status != "APPROVED":
+    if doc.waba_id != sender.waba_id or doc.status != "APPROVED" or doc.sync_error:
         frappe.throw("Choose an approved template for this sender.")
     return {
         "body": doc.body,

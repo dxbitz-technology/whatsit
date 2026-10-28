@@ -97,6 +97,7 @@ def queue(
         template_doc = frappe.get_doc("WhatsApp Template", template_name)
         if (
             template_doc.status != "APPROVED"
+            or template_doc.sync_error
             or template_doc.waba_id != sender.waba_id
             or (language and template_doc.language != language)
         ):

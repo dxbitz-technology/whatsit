@@ -20,6 +20,7 @@
     "buttons",
     "status",
     "rejection_reason",
+    "sync_error",
     "quality_rating",
     "last_synced_at",
     "last_submitted_at",
@@ -120,6 +121,12 @@
     {
       "fieldname": "rejection_reason",
       "label": "Rejection Reason",
+      "fieldtype": "Small Text",
+      "read_only": 1
+    },
+    {
+      "fieldname": "sync_error",
+      "label": "Import Error",
       "fieldtype": "Small Text",
       "read_only": 1
     },

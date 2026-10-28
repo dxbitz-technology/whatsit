@@ -38,6 +38,8 @@ def record(message, incoming_at=None):
             }
         )
     doc.flags.internal_update = True
+    association = resolve_party(message.sender, message.remote_number)
+    doc.party_type, doc.party = association or (None, None)
     timestamp = get_datetime(incoming_at or message.creation or now_datetime())
     if not doc.last_message_at or timestamp >= get_datetime(doc.last_message_at):
         doc.last_message_at = timestamp
@@ -58,3 +60,21 @@ def record(message, incoming_at=None):
         update_modified=False,
     )
     return doc.name
+
+
+def resolve_party(sender, remote):
+    parties = frappe.get_all(
+        "WhatsApp Message",
+        filters={
+            "sender": sender,
+            "remote_number": remote,
+            "party_type": ["is", "set"],
+            "party": ["is", "set"],
+        },
+        fields=["party_type", "party"],
+        distinct=True,
+        limit=2,
+        order_by="",
+    )
+    if len(parties) == 1 and frappe.db.exists(parties[0].party_type, parties[0].party):
+        return parties[0].party_type, parties[0].party

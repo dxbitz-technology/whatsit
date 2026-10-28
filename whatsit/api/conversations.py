@@ -10,6 +10,7 @@ MESSAGE_FIELDS = [
     "party",
     "message_type",
     "text",
+    "response_payload",
     "media_file",
     "status",
     "error_details",
