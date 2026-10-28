@@ -1,0 +1,66 @@
+{
+  "doctype": "Workspace",
+  "name": "WhatsApp",
+  "label": "WhatsApp",
+  "title": "WhatsApp",
+  "module": "Whatsit",
+  "public": 1,
+  "is_hidden": 0,
+  "icon": "message-circle",
+  "sequence_id": 20,
+  "roles": [
+    {
+      "role": "WhatsApp Manager"
+    },
+    {
+      "role": "WhatsApp User"
+    }
+  ],
+  "content": "[{\"id\": \"title\", \"type\": \"header\", \"data\": {\"text\": \"WhatsApp\", \"col\": 12}}, {\"id\": \"inbox\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Inbox\", \"col\": 4}}, {\"id\": \"compose\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Compose\", \"col\": 4}}, {\"id\": \"numbers\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Numbers\", \"col\": 4}}, {\"id\": \"templates\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Templates\", \"col\": 4}}]",
+  "shortcuts": [
+    {
+      "label": "Inbox",
+      "type": "Page",
+      "link_to": "whatsapp-inbox"
+    },
+    {
+      "label": "Compose",
+      "type": "Page",
+      "link_to": "whatsapp-compose"
+    },
+    {
+      "label": "Numbers",
+      "type": "DocType",
+      "link_to": "WhatsApp Number"
+    },
+    {
+      "label": "Templates",
+      "type": "DocType",
+      "link_to": "WhatsApp Template"
+    }
+  ],
+  "links": [
+    {
+      "type": "Card Break",
+      "label": "Setup"
+    },
+    {
+      "type": "Link",
+      "label": "Meta Apps",
+      "link_type": "DocType",
+      "link_to": "WhatsApp Meta App"
+    },
+    {
+      "type": "Link",
+      "label": "Webhook Events",
+      "link_type": "DocType",
+      "link_to": "WhatsApp Webhook Event"
+    },
+    {
+      "type": "Link",
+      "label": "API Logs",
+      "link_type": "DocType",
+      "link_to": "WhatsApp API Log"
+    }
+  ]
+}

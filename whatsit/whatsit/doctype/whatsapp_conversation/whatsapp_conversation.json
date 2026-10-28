@@ -1,0 +1,117 @@
+{
+  "doctype": "DocType",
+  "name": "WhatsApp Conversation",
+  "module": "Whatsit",
+  "engine": "InnoDB",
+  "istable": 0,
+  "field_order": [
+    "sender",
+    "remote_number",
+    "party_type",
+    "party",
+    "last_message_at",
+    "last_incoming_at",
+    "service_window_expires_at",
+    "unread_count",
+    "last_message_preview",
+    "status"
+  ],
+  "fields": [
+    {
+      "fieldname": "sender",
+      "label": "Sender",
+      "fieldtype": "Link",
+      "options": "WhatsApp Number",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "remote_number",
+      "label": "Recipient",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "party_type",
+      "label": "Party Type",
+      "fieldtype": "Link",
+      "options": "DocType"
+    },
+    {
+      "fieldname": "party",
+      "label": "Party",
+      "fieldtype": "Dynamic Link",
+      "options": "party_type"
+    },
+    {
+      "fieldname": "last_message_at",
+      "label": "Last Message",
+      "fieldtype": "Datetime",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "last_incoming_at",
+      "label": "Last Incoming",
+      "fieldtype": "Datetime",
+      "read_only": 1
+    },
+    {
+      "fieldname": "service_window_expires_at",
+      "label": "Reply Until",
+      "fieldtype": "Datetime",
+      "read_only": 1
+    },
+    {
+      "fieldname": "unread_count",
+      "label": "Unread",
+      "fieldtype": "Int",
+      "read_only": 1,
+      "default": 0
+    },
+    {
+      "fieldname": "last_message_preview",
+      "label": "Last Message",
+      "fieldtype": "Small Text",
+      "read_only": 1
+    },
+    {
+      "fieldname": "status",
+      "label": "Status",
+      "fieldtype": "Select",
+      "options": "Open\nClosed",
+      "default": "Open"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "WhatsApp Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "report": 1,
+      "export": 1,
+      "share": 0
+    },
+    {
+      "role": "WhatsApp Manager",
+      "permlevel": 1,
+      "read": 1,
+      "write": 1
+    },
+    {
+      "role": "WhatsApp User",
+      "read": 1,
+      "select": 1
+    },
+    {
+      "role": "WhatsApp API User",
+      "read": 1,
+      "select": 1
+    }
+  ],
+  "track_changes": 0,
+  "autoname": "hash"
+}

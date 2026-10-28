@@ -1,0 +1,19 @@
+[project]
+name = "whatsit"
+version = "0.1.0"
+description = "WhatsApp messaging and inbox for Frappe"
+authors = [{name = "DXBITZ Technology"}]
+requires-python = ">=3.10"
+license = {text = "AGPL-3.0-or-later"}
+dependencies = ["requests>=2.31,<3", "phonenumbers>=8.13,<10"]
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+[tool.setuptools.packages.find]
+include = ["whatsit*"]
+[tool.setuptools.package-data]
+whatsit = ["**/*.json", "**/*.js", "**/*.css", "*.txt"]
+[tool.bench.frappe-dependencies]
+frappe = ">=15.0.0,<17.0.0"
+[tool.ruff]
+line-length = 110

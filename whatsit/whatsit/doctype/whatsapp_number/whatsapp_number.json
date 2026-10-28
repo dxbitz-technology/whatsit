@@ -1,0 +1,160 @@
+{
+  "doctype": "DocType",
+  "name": "WhatsApp Number",
+  "module": "Whatsit",
+  "engine": "InnoDB",
+  "istable": 0,
+  "field_order": [
+    "display_name",
+    "phone_number",
+    "title",
+    "meta_phone_number_id",
+    "waba_id",
+    "meta_app",
+    "access_token",
+    "enabled",
+    "is_default",
+    "api_version",
+    "default_slot",
+    "connection_status",
+    "last_tested_at",
+    "webhook_status",
+    "allowed_users"
+  ],
+  "fields": [
+    {
+      "fieldname": "display_name",
+      "label": "Display Name",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "phone_number",
+      "label": "Phone Number",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "unique": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "title",
+      "label": "Title",
+      "fieldtype": "Data",
+      "read_only": 1
+    },
+    {
+      "fieldname": "meta_phone_number_id",
+      "label": "Meta Phone Number ID",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "unique": 1
+    },
+    {
+      "fieldname": "waba_id",
+      "label": "Business Account ID",
+      "fieldtype": "Data",
+      "reqd": 1
+    },
+    {
+      "fieldname": "meta_app",
+      "label": "Meta App",
+      "fieldtype": "Link",
+      "options": "WhatsApp Meta App",
+      "reqd": 1
+    },
+    {
+      "fieldname": "access_token",
+      "label": "Access Token",
+      "fieldtype": "Password",
+      "reqd": 1,
+      "permlevel": 1
+    },
+    {
+      "fieldname": "enabled",
+      "label": "Enabled",
+      "fieldtype": "Check",
+      "default": 1
+    },
+    {
+      "fieldname": "is_default",
+      "label": "Default Sender",
+      "fieldtype": "Check"
+    },
+    {
+      "fieldname": "api_version",
+      "label": "API Version",
+      "fieldtype": "Data",
+      "default": "v26.0",
+      "reqd": 1
+    },
+    {
+      "fieldname": "default_slot",
+      "label": "Default Slot",
+      "fieldtype": "Data",
+      "read_only": 1,
+      "unique": 1,
+      "hidden": 1
+    },
+    {
+      "fieldname": "connection_status",
+      "label": "Connection",
+      "fieldtype": "Select",
+      "options": "Not Tested\nConnected\nFailed",
+      "default": "Not Tested",
+      "read_only": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "last_tested_at",
+      "label": "Last Tested",
+      "fieldtype": "Datetime",
+      "read_only": 1
+    },
+    {
+      "fieldname": "webhook_status",
+      "label": "Webhook",
+      "fieldtype": "Data",
+      "read_only": 1
+    },
+    {
+      "fieldname": "allowed_users",
+      "label": "Allowed Users",
+      "fieldtype": "Table",
+      "options": "WhatsApp Number User",
+      "permlevel": 1
+    }
+  ],
+  "permissions": [
+    {
+      "role": "WhatsApp Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "report": 1,
+      "export": 1,
+      "share": 0
+    },
+    {
+      "role": "WhatsApp Manager",
+      "permlevel": 1,
+      "read": 1,
+      "write": 1
+    },
+    {
+      "role": "WhatsApp User",
+      "read": 1,
+      "select": 1
+    },
+    {
+      "role": "WhatsApp API User",
+      "read": 1,
+      "select": 1
+    }
+  ],
+  "track_changes": 0,
+  "autoname": "WA-.#####",
+  "title_field": "title",
+  "search_fields": "display_name,phone_number"
+}

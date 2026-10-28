@@ -1,0 +1,83 @@
+{
+  "doctype": "DocType",
+  "name": "WhatsApp API Log",
+  "module": "Whatsit",
+  "engine": "InnoDB",
+  "istable": 0,
+  "field_order": [
+    "operation",
+    "sender",
+    "message",
+    "http_status",
+    "request_summary",
+    "response_summary",
+    "error",
+    "created_at"
+  ],
+  "fields": [
+    {
+      "fieldname": "operation",
+      "label": "Operation",
+      "fieldtype": "Data",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "sender",
+      "label": "Sender",
+      "fieldtype": "Link",
+      "options": "WhatsApp Number"
+    },
+    {
+      "fieldname": "message",
+      "label": "Message",
+      "fieldtype": "Link",
+      "options": "WhatsApp Message"
+    },
+    {
+      "fieldname": "http_status",
+      "label": "HTTP Status",
+      "fieldtype": "Int",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "request_summary",
+      "label": "Request",
+      "fieldtype": "Small Text"
+    },
+    {
+      "fieldname": "response_summary",
+      "label": "Response",
+      "fieldtype": "Small Text"
+    },
+    {
+      "fieldname": "error",
+      "label": "Error",
+      "fieldtype": "Small Text"
+    },
+    {
+      "fieldname": "created_at",
+      "label": "Created At",
+      "fieldtype": "Datetime"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "WhatsApp Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "report": 1,
+      "export": 1,
+      "share": 0
+    },
+    {
+      "role": "WhatsApp Manager",
+      "permlevel": 1,
+      "read": 1,
+      "write": 1
+    }
+  ],
+  "track_changes": 0,
+  "autoname": "hash"
+}
