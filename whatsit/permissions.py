@@ -34,21 +34,21 @@ def check_number(name, user=None):
         frappe.throw("You cannot use this sender.", frappe.PermissionError)
 
 
-def number_permission(doc, user=None, permission_type=None, **kwargs):
+def number_permission(doc, user=None, ptype=None, **kwargs):
     user = user or frappe.session.user
-    return is_manager(user) or (permission_type in ("read", "select") and doc.name in allowed_numbers(user))
+    return is_manager(user) or (ptype in ("read", "select") and doc.name in allowed_numbers(user))
 
 
-def sender_permission(doc, user=None, permission_type=None, **kwargs):
+def sender_permission(doc, user=None, ptype=None, **kwargs):
     user = user or frappe.session.user
-    return is_manager(user) or (permission_type in ("read", "select") and doc.sender in allowed_numbers(user))
+    return is_manager(user) or (ptype in ("read", "select") and doc.sender in allowed_numbers(user))
 
 
-def template_permission(doc, user=None, permission_type=None, **kwargs):
+def template_permission(doc, user=None, ptype=None, **kwargs):
     user = user or frappe.session.user
     if is_manager(user):
         return True
-    return permission_type in ("read", "select") and bool(
+    return ptype in ("read", "select") and bool(
         frappe.db.exists("WhatsApp Number", {"name": ["in", allowed_numbers(user)], "waba_id": doc.waba_id})
     )
 

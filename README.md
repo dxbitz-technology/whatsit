@@ -176,7 +176,7 @@ Whitelisted methods, prefixed with `whatsit.`:
 
 The automated suite covers real Frappe document creation and permissions with mocked Meta requests. It checks default selection, shared WABAs, template approval and sync, signed multi-app webhook routing, private attachments, party resolution, conversation grouping, reply windows, idempotency, status ordering and retry behavior. CI runs the suite on clean Frappe v15 and v16 MariaDB sites, without ERPNext.
 
-Local verification: 34 tests passed on both clean Frappe v15 and v16 MariaDB sites without ERPNext. Install and migrate passed on both versions. Inbox and compose pages were checked in browsers on both versions. The v16 conversation view and reply dialog were also checked.
+Local verification: 36 tests passed on both clean Frappe v15 and v16 MariaDB sites without ERPNext. Install and migrate passed on both versions. Inbox and compose pages were checked in browsers on both versions. The v16 conversation view and reply dialog were also checked.
 
 Live Meta delivery has not been verified without credentials. Before use, complete this checklist with your own Meta test number and permitted test recipient:
 
