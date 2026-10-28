@@ -18,21 +18,24 @@ def send(message):
     try:
         sender = resolve_sender(doc.sender, check_access=False)
         check_number(doc.sender, doc.requested_by)
-        if doc.party_type:
+        if doc.party_type or doc.reference_doctype:
             from whatsit.services.party_resolver import check_party
 
             previous = frappe.session.user
             try:
                 frappe.set_user(doc.requested_by)
-                check_party(doc.party_type, doc.party)
+                if doc.party_type:
+                    check_party(doc.party_type, doc.party)
                 if doc.reference_doctype:
                     check_party(doc.reference_doctype, doc.reference_name)
             finally:
                 frappe.set_user(previous)
         if doc.message_type != "Template":
             ensure_window(doc.sender, doc.remote_number)
-        elif frappe.db.get_value("WhatsApp Template", doc.template, "status") != "APPROVED":
-            frappe.throw("Template is no longer approved.")
+        else:
+            template = frappe.get_doc("WhatsApp Template", doc.template)
+            if template.status != "APPROVED" or template.sync_error:
+                frappe.throw("Template is no longer approved or supported.")
         if doc.media_file:
             previous = frappe.session.user
             try:

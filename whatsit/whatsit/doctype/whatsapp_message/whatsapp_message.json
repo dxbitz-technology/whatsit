@@ -13,6 +13,7 @@
     "conversation",
     "message_type",
     "text",
+    "response_payload",
     "template",
     "template_parameters_json",
     "media_file",
@@ -88,6 +89,12 @@
       "fieldname": "text",
       "label": "Message",
       "fieldtype": "Text"
+    },
+    {
+      "fieldname": "response_payload",
+      "label": "Reply Payload",
+      "fieldtype": "Text",
+      "read_only": 1
     },
     {
       "fieldname": "template",

@@ -78,7 +78,9 @@ class TestMessaging(FrappeTestCase):
             if dt == "WhatsApp Webhook Event":
                 frappe.db.delete(dt, {"meta_app": self.app.name})
             elif dt == "WhatsApp Template":
-                frappe.db.delete("WhatsApp Template Variable", {"parent": self.template.name})
+                template_names = frappe.get_all(dt, filters={"waba_id": "2001"}, pluck="name")
+                for child in ("WhatsApp Template Variable", "WhatsApp Template Button"):
+                    frappe.db.delete(child, {"parent": ["in", template_names]})
                 frappe.db.delete(dt, {"waba_id": "2001"})
             else:
                 frappe.db.delete(dt, {"sender": ["in", [self.number.name, self.second.name]]})
@@ -822,3 +824,339 @@ class TestMessaging(FrappeTestCase):
         )
         self.assertTrue(file_name)
         self.assertFalse(frappe.get_doc("File", file_name).has_permission("read"))
+
+    def media_event(self):
+        messages = [
+            {
+                "id": "batch-text",
+                "from": "971509876543",
+                "timestamp": "1793188800",
+                "type": "text",
+                "text": {"body": "Keep this message"},
+            },
+            {
+                "id": "batch-media",
+                "from": "971509876543",
+                "timestamp": "1793188800",
+                "type": "document",
+                "document": {"id": "12345", "caption": "Attachment"},
+            },
+        ]
+        payload = {
+            "entry": [
+                {
+                    "id": "2001",
+                    "changes": [
+                        {
+                            "field": "messages",
+                            "value": {
+                                "metadata": {"phone_number_id": self.number.meta_phone_number_id},
+                                "messages": messages,
+                            },
+                        }
+                    ],
+                }
+            ]
+        }
+        return frappe.get_doc(
+            {
+                "doctype": "WhatsApp Webhook Event",
+                "meta_app": self.app.name,
+                "event_key": "media-batch",
+                "payload": json.dumps(payload),
+                "received_at": now_datetime(),
+                "processing_status": "Queued",
+            }
+        ).insert()
+
+    def test_unsupported_media_keeps_webhook_messages(self):
+        event = self.media_event()
+        with patch(
+            "whatsit.services.meta_client.MetaClient.request",
+            return_value={
+                "mime_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "file_size": 1024,
+            },
+        ):
+            webhook_processor.process(event.name)
+        event.reload()
+        self.assertEqual(event.processing_status, "Failed")
+        self.assertIsNone(event.next_attempt_at)
+        self.assertEqual(frappe.db.count("WhatsApp Message", {"sender": self.number.name}), 2)
+        media = frappe.get_doc("WhatsApp Message", {"meta_message_id": "batch-media"})
+        self.assertEqual(media.status, "Received")
+        self.assertEqual(media.error_code, "UNSUPPORTED_MEDIA")
+        self.assertEqual(frappe.db.get_value("WhatsApp Conversation", media.conversation, "unread_count"), 2)
+
+    def test_transient_media_retries_without_duplicating_messages(self):
+        event = self.media_event()
+        with patch(
+            "whatsit.services.meta_client.MetaClient.request",
+            side_effect=MetaError("NETWORK", transient=True),
+        ):
+            webhook_processor.process(event.name)
+        event.reload()
+        self.assertIsNotNone(event.next_attempt_at)
+        self.assertEqual(frappe.db.count("WhatsApp Message", {"sender": self.number.name}), 2)
+        pdf = self.pdf()
+        with (
+            patch(
+                "whatsit.services.meta_client.MetaClient.request",
+                return_value={
+                    "mime_type": "application/pdf",
+                    "file_size": len(pdf),
+                    "url": "https://lookaside.fbsbx.com/media",
+                },
+            ),
+            patch("whatsit.services.meta_client.MetaClient.download", return_value=pdf),
+        ):
+            webhook_processor.process(event.name)
+            webhook_processor.process(event.name)
+        media = frappe.get_doc("WhatsApp Message", {"meta_message_id": "batch-media"})
+        self.assertTrue(media.media_file)
+        self.assertFalse(media.error_code)
+        self.assertFalse(media.error_details)
+        self.assertEqual(frappe.db.count("WhatsApp Message", {"sender": self.number.name}), 2)
+        self.assertEqual(frappe.db.get_value("WhatsApp Conversation", media.conversation, "unread_count"), 2)
+        self.assertEqual(
+            frappe.db.get_value("WhatsApp Webhook Event", event.name, "processing_status"), "Processed"
+        )
+
+    def test_media_retries_remain_bounded(self):
+        event = self.media_event()
+        with patch(
+            "whatsit.services.meta_client.MetaClient.request",
+            side_effect=MetaError("NETWORK", transient=True),
+        ):
+            for attempt in range(6):
+                webhook_processor.process(event.name)
+                event.reload()
+                self.assertEqual(bool(event.next_attempt_at), attempt < 5)
+        self.assertEqual(event.attempt_count, 6)
+        self.assertEqual(frappe.db.count("WhatsApp Message", {"sender": self.number.name}), 2)
+
+    def test_invalid_download_keeps_message_and_sanitizes_error(self):
+        event = self.media_event()
+        with patch(
+            "whatsit.services.webhook_processor.retrieve", side_effect=frappe.ValidationError("secret-url")
+        ):
+            webhook_processor.process(event.name)
+        media = frappe.get_doc("WhatsApp Message", {"meta_message_id": "batch-media"})
+        self.assertNotIn("secret-url", media.error_details)
+        self.assertEqual(media.error_code, "MEDIA_RETRIEVAL_FAILED")
+        self.assertIsNone(frappe.db.get_value("WhatsApp Webhook Event", event.name, "next_attempt_at"))
+
+    def test_quick_reply_text_and_payload_are_retained(self):
+        for index, (kind, detail, expected, payload) in enumerate(
+            [
+                ("button", {"text": "Yes", "payload": "confirm-123"}, "Yes", "confirm-123"),
+                ("button", {"text": "No", "payload": "cancel-123"}, "No", "cancel-123"),
+                (
+                    "interactive",
+                    {"type": "button_reply", "button_reply": {"title": "Choose", "id": "choice-1"}},
+                    "Choose",
+                    "choice-1",
+                ),
+            ]
+        ):
+            item = {
+                "id": "button-" + str(index),
+                "from": "971509876543",
+                "timestamp": "1793188800",
+                "type": kind,
+                kind: detail,
+            }
+            webhook_processor.incoming(self.number.name, item)
+            webhook_processor.incoming(self.number.name, item)
+            doc = frappe.get_doc("WhatsApp Message", {"meta_message_id": item["id"]})
+            self.assertEqual(doc.text, expected)
+            self.assertEqual(doc.response_payload, payload)
+        self.assertEqual(frappe.db.count("WhatsApp Message", {"sender": self.number.name}), 3)
+        self.assertEqual(len(conversations.thread(self.number.name, "+971509876543")["messages"]), 3)
+
+    def test_dispatch_rechecks_reference_without_party(self):
+        import frappe.share
+
+        contact = frappe.get_doc({"doctype": "Contact", "first_name": "Private reference"}).insert()
+        self.addCleanup(frappe.delete_doc, "Contact", contact.name, force=True)
+        user = self.make_user("WhatsApp API User")
+        self.number.append("allowed_users", {"user": user})
+        self.number.save()
+        frappe.share.add("Contact", contact.name, user, read=1)
+        frappe.set_user(user)
+        queued = self.queued_template(reference_doctype="Contact", reference_name=contact.name)
+        frappe.set_user("Administrator")
+        frappe.share.remove("Contact", contact.name, user)
+        self.assertFalse(frappe.has_permission("Contact", "read", doc=contact, user=user))
+        with patch("whatsit.services.meta_client.MetaClient.request") as request:
+            send(queued["message_id"])
+        request.assert_not_called()
+        self.assertEqual(frappe.session.user, "Administrator")
+        self.assertEqual(frappe.db.get_value("WhatsApp Message", queued["message_id"], "status"), "Failed")
+
+    def remote_template(self, name, meta_id, header=None):
+        components = [{"type": "BODY", "text": "Hello {{1}}"}]
+        if header:
+            components.insert(0, {"type": "HEADER", "format": header})
+        return {
+            "id": meta_id,
+            "name": name,
+            "language": "en",
+            "category": "UTILITY",
+            "status": "APPROVED",
+            "components": components,
+        }
+
+    def test_sync_continues_after_unsupported_templates(self):
+        first = self.remote_template(self.template.template_name, "3001")
+        second = self.remote_template("supported_after", "3004")
+        with patch(
+            "whatsit.services.meta_client.MetaClient.request",
+            return_value={
+                "data": [
+                    first,
+                    self.remote_template("video_header", "3002", "VIDEO"),
+                    self.remote_template("location_header", "3003", "LOCATION"),
+                    second,
+                ]
+            },
+        ):
+            result = templates.sync(self.number.name)
+        self.assertEqual(result, {"count": 2, "skipped": 2})
+        self.assertTrue(frappe.db.exists("WhatsApp Template", {"meta_template_id": "3004"}))
+        self.assertFalse(frappe.db.exists("WhatsApp Template", {"meta_template_id": "3002"}))
+        logs = frappe.get_all(
+            "WhatsApp API Log",
+            filters={"sender": self.number.name, "operation": "template_sync"},
+            fields=["response_summary", "error"],
+        )
+        self.assertEqual(len(logs), 2)
+        self.assertTrue(all(row.error for row in logs))
+        self.assertIn("3002", frappe.as_json(logs))
+
+    def test_failed_import_blocks_stale_template_until_sync_recovers(self):
+        queued = self.queued_template()
+        with patch(
+            "whatsit.services.meta_client.MetaClient.request",
+            return_value={
+                "data": [
+                    self.remote_template(self.template.template_name, "3001", "VIDEO"),
+                ]
+            },
+        ):
+            templates.sync(self.number.name)
+        # A later approval event must not make stale local content sendable.
+        webhook_processor.template_update(
+            self.app.name,
+            "2001",
+            {
+                "message_template_name": self.template.template_name,
+                "message_template_language": "en",
+                "event": "APPROVED",
+            },
+        )
+        self.assertEqual(templates.approved(self.number.name), [])
+        with self.assertRaises(frappe.ValidationError):
+            self.queued_template()
+        with self.assertRaises(frappe.ValidationError):
+            templates.details(self.template.name, self.number.name)
+        with patch("whatsit.services.meta_client.MetaClient.request") as request:
+            send(queued["message_id"])
+        request.assert_not_called()
+        with patch(
+            "whatsit.services.meta_client.MetaClient.request",
+            return_value={
+                "data": [
+                    self.remote_template(self.template.template_name, "3001"),
+                ]
+            },
+        ):
+            templates.sync(self.number.name)
+        self.assertFalse(frappe.db.get_value("WhatsApp Template", self.template.name, "sync_error"))
+        self.assertEqual(self.queued_template()["status"], "Queued")
+
+    def test_cleanup_drains_expired_payload_batches(self):
+        from whatsit.jobs.cleanup import run
+
+        old = now_datetime() - timedelta(days=8)
+        prefix = frappe.generate_hash(length=8)
+        fields = [
+            "name",
+            "meta_app",
+            "event_key",
+            "received_at",
+            "payload",
+            "processing_status",
+            "creation",
+            "modified",
+            "next_attempt_at",
+        ]
+        rows = [
+            (
+                prefix + str(i),
+                self.app.name,
+                prefix + str(i),
+                old,
+                '{"text":"private"}',
+                "Failed",
+                old,
+                old,
+                old,
+            )
+            for i in range(1001)
+        ]
+        frappe.db.bulk_insert("WhatsApp Webhook Event", fields, rows)
+        current = self.media_event()
+        run()
+        run()
+        self.assertEqual(
+            frappe.db.count("WhatsApp Webhook Event", {"meta_app": self.app.name, "payload": ["is", "set"]}),
+            1,
+        )
+        self.assertTrue(frappe.db.get_value("WhatsApp Webhook Event", current.name, "payload"))
+        self.assertEqual(frappe.db.count("WhatsApp Webhook Event", {"meta_app": self.app.name}), 1002)
+        self.assertIsNone(frappe.db.get_value("WhatsApp Webhook Event", prefix + "0", "next_attempt_at"))
+
+    def contact(self, name):
+        contact = frappe.get_doc({"doctype": "Contact", "first_name": name}).insert()
+        self.addCleanup(frappe.delete_doc, "Contact", contact.name, force=True)
+        return contact
+
+    def test_conversation_preserves_unambiguous_party_and_search(self):
+        contact = self.contact("Conversation Party")
+        self.queued_template(party_type="Contact", party=contact.name)
+        self.inbound()
+        self.assertEqual(
+            frappe.db.get_value("WhatsApp Conversation", {"sender": self.number.name}, "party"), contact.name
+        )
+        self.assertEqual(len(conversations.list_items(sender=self.number.name, search=contact.name)), 1)
+
+    def test_conversation_does_not_guess_between_parties_or_senders(self):
+        first, second = self.contact("First Party"), self.contact("Second Party")
+        self.queued_template(party_type="Contact", party=first.name)
+        send_template(
+            self.second.name,
+            "+971509876543",
+            self.template.name,
+            variables={"1": "Ahmed"},
+            party_type="Contact",
+            party=second.name,
+        )
+        self.inbound()
+        self.assertEqual(
+            frappe.db.get_value("WhatsApp Conversation", {"sender": self.number.name}, "party"), first.name
+        )
+        self.queued_template(party_type="Contact", party=second.name)
+        self.assertFalse(frappe.db.get_value("WhatsApp Conversation", {"sender": self.number.name}, "party"))
+
+    def test_existing_conversation_party_backfill_is_idempotent(self):
+        from whatsit.patches.backfill_conversation_parties import execute
+
+        self.inbound()
+        contact = self.contact("Backfilled Party")
+        self.queued_template(party_type="Contact", party=contact.name)
+        name = frappe.db.get_value("WhatsApp Conversation", {"sender": self.number.name}, "name")
+        frappe.db.set_value("WhatsApp Conversation", name, {"party_type": None, "party": None})
+        execute()
+        execute()
+        self.assertEqual(frappe.db.get_value("WhatsApp Conversation", name, "party"), contact.name)

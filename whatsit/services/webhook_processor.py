@@ -27,6 +27,7 @@ def process(event):
     doc.db_set({"processing_status": "Processing", "attempt_count": doc.attempt_count + 1})
     frappe.db.savepoint("webhook_changes")
     try:
+        media_errors = []
         payload = frappe.parse_json(doc.payload)
         for entry in payload.get("entry", []):
             for change in entry.get("changes", []):
@@ -55,9 +56,15 @@ def process(event):
                 lock_sender(sender_name)
                 frappe.db.set_value("WhatsApp Number", sender_name, "webhook_status", "Receiving")
                 for item in value.get("messages", []):
-                    incoming(sender_name, item)
+                    media_error = incoming(sender_name, item)
+                    if media_error:
+                        media_errors.append(media_error)
                 for item in value.get("statuses", []):
                     status_update(sender_name, item)
+        if media_errors:
+            # Keep received messages while retrying only their missing attachments.
+            mark_failed(doc, next((error for error in media_errors if error.transient), media_errors[0]))
+            return
         doc.db_set(
             {
                 "processing_status": "Processed",
@@ -68,23 +75,48 @@ def process(event):
         )
     except Exception as exc:
         frappe.db.rollback(save_point="webhook_changes")
+        mark_failed(doc, exc)
+
+
+def mark_failed(doc, exc):
+    error = (
+        str(exc)
+        if isinstance(exc, MetaError)
+        else "Webhook processing failed. Check sender mappings and payload."
+    )
+    retry_allowed = not isinstance(exc, (frappe.ValidationError, frappe.PermissionError)) and (
+        not isinstance(exc, MetaError) or exc.transient
+    )
+    doc.db_set(
+        {
+            "processing_status": "Failed",
+            "last_error": error[:300],
+            "next_attempt_at": now_datetime() + timedelta(seconds=min(60 * 2**doc.attempt_count, 3600))
+            if retry_allowed and doc.attempt_count <= 5
+            else None,
+        }
+    )
+
+
+def retrieve_incoming_media(doc):
+    frappe.db.savepoint("incoming_media")
+    try:
+        retrieve(doc)
+    except frappe.db.InternalError:
+        raise
+    except Exception as exc:
+        frappe.db.rollback(save_point="incoming_media")
         error = (
-            str(exc)
+            exc
             if isinstance(exc, MetaError)
-            else "Webhook processing failed. Check sender mappings and payload."
+            else MetaError(
+                "MEDIA_RETRIEVAL_FAILED",
+                transient=not isinstance(exc, (frappe.ValidationError, frappe.PermissionError)),
+            )
         )
-        retry_allowed = not isinstance(exc, (frappe.ValidationError, frappe.PermissionError)) and (
-            not isinstance(exc, MetaError) or exc.transient
-        )
-        doc.db_set(
-            {
-                "processing_status": "Failed",
-                "last_error": error[:300],
-                "next_attempt_at": now_datetime() + timedelta(seconds=min(60 * 2**doc.attempt_count, 3600))
-                if retry_allowed and doc.attempt_count <= 5
-                else None,
-            }
-        )
+        doc.db_set({"error_code": error.code, "error_details": f"Attachment unavailable ({error.code})."})
+        return error
+    doc.db_set({"error_code": None, "error_details": None})
 
 
 def incoming(sender, item):
@@ -97,14 +129,22 @@ def incoming(sender, item):
         if doc.sender != sender:
             raise MetaError("MESSAGE_SENDER_MISMATCH")
         if doc.message_type in ("Image", "Document") and not doc.media_file:
-            retrieve(doc)
+            return retrieve_incoming_media(doc)
         return
     remote = normalize_phone("+" + item["from"].lstrip("+"))
     kind = item.get("type")
     detail = item.get(kind, {})
     message_type = {"text": "Text", "image": "Image", "document": "Document"}.get(kind, "Text")
     text = detail.get("body") if kind == "text" else detail.get("caption")
-    if kind not in ("text", "image", "document"):
+    response_payload = None
+    if kind == "button":
+        text = detail.get("text") or detail.get("payload")
+        response_payload = detail.get("payload")
+    elif kind == "interactive" and detail.get("type") == "button_reply":
+        reply = detail.get("button_reply", {})
+        text = reply.get("title") or reply.get("id")
+        response_payload = reply.get("id")
+    elif kind not in ("text", "image", "document"):
         text = "[" + str(kind or "Unsupported message")[:60] + "]"
     timestamp = event_time(item.get("timestamp"))
     doc = frappe.get_doc(
@@ -115,6 +155,7 @@ def incoming(sender, item):
             "remote_number": remote,
             "message_type": message_type,
             "text": text,
+            "response_payload": response_payload,
             "meta_message_id": meta_id,
             "status": "Received",
             "received_at": timestamp,
@@ -125,7 +166,7 @@ def incoming(sender, item):
     doc.insert(ignore_permissions=True)
     record(doc, timestamp)
     if doc.meta_media_id:
-        retrieve(doc)
+        return retrieve_incoming_media(doc)
 
 
 def status_update(sender, item):

@@ -3,7 +3,7 @@ import re
 import frappe
 from frappe.utils import now_datetime
 from whatsit.services.number_service import resolve_sender
-from whatsit.services.meta_client import MetaClient
+from whatsit.services.meta_client import MetaClient, record_log
 
 EDITABLE = (
     "template_name",
@@ -184,6 +184,7 @@ def apply_remote(sender, item):
             "quality_rating": str((item.get("quality_score") or {}).get("score") or ""),
             "last_synced_at": now_datetime(),
             "meta_response": frappe.as_json(item),
+            "sync_error": None,
         }
     )
     doc.header_type = "NONE"
@@ -248,17 +249,42 @@ def sync(sender):
         "fields": "id,name,language,status,category,components,rejected_reason,quality_score",
         "limit": 100,
     }
-    count = 0
+    count = skipped = 0
     while True:
         result = client.request("GET", sender.waba_id + "/message_templates", params=params)
         for item in result.get("data", []):
-            apply_remote(sender, item)
+            frappe.db.savepoint("template_import")
+            try:
+                apply_remote(sender, item)
+            except frappe.ValidationError:
+                frappe.db.rollback(save_point="template_import")
+                frappe.clear_messages()
+                error = "Template could not be imported. Its format or content is not supported here."
+                existing = frappe.db.get_value(
+                    "WhatsApp Template",
+                    {"waba_id": sender.waba_id, "template_name": item["name"], "language": item["language"]},
+                    "name",
+                )
+                if existing:
+                    frappe.db.set_value(
+                        "WhatsApp Template",
+                        existing,
+                        {
+                            "status": "UNSUPPORTED",
+                            "sync_error": error,
+                            "meta_response": frappe.as_json(item),
+                            "last_synced_at": now_datetime(),
+                        },
+                    )
+                record_log("template_sync", sender.name, response={"id": item.get("id")}, error=error)
+                skipped += 1
+                continue
             count += 1
         cursor = result.get("paging", {}).get("cursors", {}).get("after")
         if not result.get("paging", {}).get("next") or not cursor:
             break
         params["after"] = cursor
-    return {"count": count}
+    return {"count": count, "skipped": skipped}
 
 
 def send_components(doc, values):

@@ -4,7 +4,9 @@ frappe.ui.form.on('WhatsApp Template', {
         frm.add_custom_button(__('Sync Status'), async () => {
             const sender = frm.doc.sender;
             if (!sender) return frappe.msgprint(__('Select a sender first.'));
-            await whatsit.call('api.templates.sync', {from_number: sender}); frm.reload_doc();
+            const result = await whatsit.call('api.templates.sync', {from_number: sender});
+            if (result.skipped) frappe.msgprint(__('Skipped {0} unsupported templates. See API Logs.', [result.skipped]));
+            frm.reload_doc();
         });
         frm.add_custom_button(__('Send Test Message'), () => whatsit.open_compose({sender: frm.doc.sender}));
         if (!frm.doc.meta_template_id) frm.add_custom_button(__('Submit to Meta'), async () => {
@@ -15,9 +17,18 @@ frappe.ui.form.on('WhatsApp Template', {
             const editable = ['category','header_type','header_text','header_sample_handle','body','footer','variables','buttons'];
             editable.concat(['template_name','language','waba_id']).forEach(key => frm.set_df_property(key, 'read_only', 1));
             frm.add_custom_button(__('Edit at Meta'), () => {
-                const fields = editable.map(key => ({...frappe.meta.get_docfield(frm.doctype, key, frm.doc.name), default: frm.doc[key], read_only: 0}));
+                const fields = editable.map(key => {
+                    const field = {...frappe.meta.get_docfield(frm.doctype, key, frm.doc.name), read_only: 0};
+                    if (field.fieldtype === 'Table') {
+                        delete field.default;
+                        field.data = JSON.parse(JSON.stringify(frm.doc[key] || []));
+                    } else field.default = frm.doc[key];
+                    return field;
+                });
                 const dialog = new frappe.ui.Dialog({title: __('Edit Template at Meta'), size: 'large', fields,
                     primary_action_label: __('Submit Changes'), primary_action: async values => {
+                        // Empty tables are omitted by get_values; include intentional deletions.
+                        for (const key of ['variables', 'buttons']) values[key] = dialog.fields_dict[key].get_value();
                         await whatsit.call('api.templates.edit', {template: frm.doc.name, changes: values, from_number: frm.doc.sender}); dialog.hide(); frm.reload_doc();
                     }});
                 dialog.show();
