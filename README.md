@@ -182,7 +182,7 @@ Whitelisted methods, prefixed with `whatsit.`:
 
 The automated suite covers real Frappe document creation and permissions with mocked Meta requests. It checks default selection, shared WABAs, template approval and sync, signed multi-app webhook routing, private attachments, party resolution, conversation grouping, reply windows, idempotency, status ordering and retry behavior. CI runs the suite on clean Frappe v15 and v16 MariaDB sites, without ERPNext.
 
-Current regression verification: 48 tests passed on Frappe v15 with MariaDB and Frappe v16 with SQLite, without ERPNext. Migration passed on both sites. Three template editor checks cover existing rows, additions, and intentional removals. Run them with `node --test whatsit/tests/test_template_editor.cjs`.
+Current regression verification: 52 tests passed on Frappe v15 with MariaDB and Frappe v16 with SQLite, without ERPNext. Migration passed on both sites. Four template editor checks use the installed Frappe grid and cover child-field initialization, existing rows, additions, and intentional removals. Run them from this app with `node --test whatsit/tests/test_template_editor.cjs`; set `FRAPPE_SOURCE_PATH` when Frappe is not in the sibling `frappe` directory. CI runs both suites against Frappe v15 and v16 with MariaDB.
 
 The initial release also passed 36 tests on clean Frappe v15 and v16 MariaDB sites. Inbox and compose pages were checked in browsers on both versions, including the v16 conversation view and reply dialog.
 

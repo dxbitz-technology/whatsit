@@ -4,6 +4,11 @@ const path = require('node:path');
 const vm = require('node:vm');
 const {test} = require('node:test');
 
+const frappePath = process.env.FRAPPE_SOURCE_PATH || path.resolve(__dirname, '../../../frappe');
+const gridSource = fs.readFileSync(path.join(frappePath, 'frappe/public/js/frappe/form/grid.js'), 'utf8')
+    .replace(/^import .*;\r?\n/gm, '')
+    .replace('export default class Grid', 'globalThis.TemplateTestGrid = class Grid');
+
 function openEditor() {
     let handlers, dialog, submitted;
     const buttons = {};
@@ -13,21 +18,34 @@ function openEditor() {
         variables: [{component: 'BODY', parameter_index: 1, sample_value: 'Ahmed'}],
         buttons: [{type: 'QUICK_REPLY', text: 'Yes'}, {type: 'QUICK_REPLY', text: 'No'}],
     };
+    const metadata = Object.fromEntries(['whatsapp_template', 'whatsapp_template_variable', 'whatsapp_template_button'].map(name => {
+        const schema = JSON.parse(fs.readFileSync(path.join(__dirname, '../whatsit/doctype', name, name + '.json'), 'utf8'));
+        return [schema.name, schema];
+    }));
     const context = {
         __: value => value,
+        $: {extend: Object.assign},
         whatsit: {call: async (method, args) => {submitted = {method, args};}},
         frappe: {
             user: {has_role: () => true},
-            meta: {get_docfield: (doctype, key) => ({fieldname: key, fieldtype: ['variables', 'buttons'].includes(key) ? 'Table' : 'Data'})},
+            utils: {debounce: callback => callback},
+            get_meta: doctype => metadata[doctype],
+            meta: {
+                get_docfield: (doctype, key) => metadata[doctype]?.fields.find(field => field.fieldname === key),
+                get_docfields: doctype => metadata[doctype].fields,
+            },
             ui: {
                 form: {on: (doctype, value) => {handlers = value;}},
                 Dialog: class {
                     constructor(options) {
                         Object.assign(this, options);
-                        this.fields_dict = Object.fromEntries(options.fields.map(field => [field.fieldname, {
-                            // Dialog tables use data, not a scalar default.
-                            get_value: () => field.fieldtype === 'Table' ? (field.data || []) : field.default,
-                        }]));
+                        this.fields_dict = Object.fromEntries(options.fields.map(field => {
+                            if (field.fieldtype !== 'Table') return [field.fieldname, {get_value: () => field.default}];
+                            // Use the installed Frappe grid, including its metadata initialization.
+                            const grid = new context.TemplateTestGrid({df: field});
+                            grid.setup_fields();
+                            return [field.fieldname, {grid, get_value: () => grid.get_data()}];
+                        }));
                         dialog = this;
                     }
                     show() {}
@@ -36,15 +54,28 @@ function openEditor() {
             },
         },
     };
-    vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../whatsit/doctype/whatsapp_template/whatsapp_template.js'), 'utf8'), context);
+    vm.createContext(context);
+    vm.runInContext(gridSource, context);
+    vm.runInContext(fs.readFileSync(path.join(__dirname, '../whatsit/doctype/whatsapp_template/whatsapp_template.js'), 'utf8'), context);
     handlers.refresh({
         doc, doctype: 'WhatsApp Template', is_new: () => false,
         set_df_property() {}, reload_doc() {},
         add_custom_button: (label, callback) => {buttons[label] = callback;},
     });
     buttons['Edit at Meta']();
-    return {doc, dialog, getSubmission: () => submitted};
+    return {doc, dialog, metadata, getSubmission: () => submitted};
 }
+
+test('dialog grids initialize the real child fields without sharing metadata', () => {
+    const {dialog, metadata} = openEditor();
+    const variables = dialog.fields_dict.variables.grid;
+    const buttons = dialog.fields_dict.buttons.grid;
+    assert.equal(variables.fields_map.component.options, 'BODY\nHEADER\nBUTTON');
+    assert.equal(variables.fields_map.sample_value.reqd, 1);
+    assert.equal(buttons.fields_map.type.options, 'QUICK_REPLY\nURL\nPHONE_NUMBER');
+    variables.fields_map.sample_value.label = 'Changed';
+    assert.equal(metadata['WhatsApp Template Variable'].fields.find(field => field.fieldname === 'sample_value').label, 'Sample');
+});
 
 test('existing rows are shown and edits do not mutate the open form', () => {
     const {doc, dialog} = openEditor();

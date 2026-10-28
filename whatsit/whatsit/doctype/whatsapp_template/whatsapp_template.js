@@ -21,6 +21,7 @@ frappe.ui.form.on('WhatsApp Template', {
                     const field = {...frappe.meta.get_docfield(frm.doctype, key, frm.doc.name), read_only: 0};
                     if (field.fieldtype === 'Table') {
                         delete field.default;
+                        field.fields = frappe.meta.get_docfields(field.options).map(df => ({...df}));
                         field.data = JSON.parse(JSON.stringify(frm.doc[key] || []));
                     } else field.default = frm.doc[key];
                     return field;
