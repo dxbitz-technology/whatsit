@@ -6,7 +6,7 @@ from whatsit.services.number_service import normalize_phone
 from whatsit.services.media_service import retrieve
 from whatsit.services.meta_client import MetaError
 
-RANK = {"Queued": 0, "Sending": 1, "Unknown": 1, "Failed": 1, "Sent": 2, "Delivered": 3, "Read": 4}
+RANK = {"Queued": 0, "Sending": 1, "Unknown": 1, "Failed": 2, "Sent": 2, "Delivered": 3, "Read": 4}
 
 
 def event_time(timestamp):
@@ -73,11 +73,16 @@ def process(event):
             if isinstance(exc, MetaError)
             else "Webhook processing failed. Check sender mappings and payload."
         )
+        retry_allowed = not isinstance(exc, (frappe.ValidationError, frappe.PermissionError)) and (
+            not isinstance(exc, MetaError) or exc.transient
+        )
         doc.db_set(
             {
                 "processing_status": "Failed",
                 "last_error": error[:300],
-                "next_attempt_at": now_datetime() + timedelta(seconds=min(60 * 2**doc.attempt_count, 3600)),
+                "next_attempt_at": now_datetime() + timedelta(seconds=min(60 * 2**doc.attempt_count, 3600))
+                if retry_allowed and doc.attempt_count <= 5
+                else None,
             }
         )
 

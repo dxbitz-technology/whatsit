@@ -254,6 +254,9 @@ class TestMessaging(FrappeTestCase):
                 self.number.name, {"id": "wamid.1", "status": value, "timestamp": "1793188800"}
             )
 
+        status("failed")
+        status("sent")
+        self.assertEqual(frappe.db.get_value("WhatsApp Message", result["message_id"], "status"), "Failed")
         status("read")
         status("delivered")
         status("read")
