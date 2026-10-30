@@ -23,6 +23,9 @@ function openEditor() {
         const schema = JSON.parse(fs.readFileSync(path.join(__dirname, '../whatsit/doctype', name, name + '.json'), 'utf8'));
         return [schema.name, schema];
     }));
+    for (const name of ['header_text', 'header_sample_handle']) {
+        metadata['WhatsApp Template'].fields.find(field => field.fieldname === name).hidden_due_to_dependency = true;
+    }
     const context = {
         __: value => value,
         $: {extend: Object.assign},
@@ -41,7 +44,10 @@ function openEditor() {
                     constructor(options) {
                         Object.assign(this, options);
                         this.fields_dict = Object.fromEntries(options.fields.map(field => {
-                            if (field.fieldtype !== 'Table') return [field.fieldname, {get_value: () => field.default}];
+                            if (field.fieldtype !== 'Table') return [field.fieldname, {
+                                df: field, get_value: () => field.default,
+                                set_value: async value => {field.default = value; field.change?.();},
+                            }];
                             // Use the installed Frappe grid, including its metadata initialization.
                             const grid = new context.TemplateTestGrid({df: field});
                             grid.setup_fields();
@@ -49,6 +55,8 @@ function openEditor() {
                         }));
                         dialog = this;
                     }
+                    get_value(name) {return this.fields_dict[name].get_value();}
+                    set_df_property(name, property, value) {this.fields_dict[name].df[property] = value;}
                     show() {}
                     hide() {}
                 },
@@ -107,4 +115,24 @@ test('intentional removal submits empty tables even when dialog values omit them
     await dialog.primary_action({body: 'Hello'});
     assert.equal(getSubmission().args.changes.buttons.length, 0);
     assert.equal(getSubmission().args.changes.variables.length, 0);
+});
+
+
+test('header fields follow the editor values independently of the saved template', async () => {
+    const {dialog, doc} = openEditor();
+    const header = dialog.fields_dict.header_text.df;
+    const media = dialog.fields_dict.header_sample_handle.df;
+    assert.equal(header.hidden, true);
+    assert.equal(header.hidden_due_to_dependency, undefined);
+    await dialog.fields_dict.header_type.set_value('TEXT');
+    assert.equal(header.hidden, false);
+    assert.equal(header.reqd, true);
+    assert.equal(media.hidden, true);
+    assert.equal(doc.header_type, 'NONE');
+    await dialog.fields_dict.header_type.set_value('IMAGE');
+    assert.equal(header.hidden, true);
+    assert.equal(header.reqd, false);
+    assert.equal(media.hidden, false);
+    await dialog.fields_dict.header_type.set_value('NONE');
+    assert.equal(media.hidden, true);
 });

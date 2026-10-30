@@ -29,9 +29,24 @@ frappe.ui.form.on('WhatsApp Template', {
                     {fieldname: 'editor_buttons', fieldtype: 'Section Break', label: __('Buttons')},
                     'buttons',
                 ];
+                let dialog;
+                const update_header = () => {
+                    if (!dialog) return;
+                    const type = dialog.get_value('header_type');
+                    dialog.set_df_property('header_text', 'hidden', type !== 'TEXT');
+                    dialog.set_df_property('header_text', 'reqd', type === 'TEXT');
+                    dialog.set_df_property('header_sample_handle', 'hidden', !['IMAGE', 'DOCUMENT'].includes(type));
+                };
                 const fields = layout.map(key => {
                     if (typeof key !== 'string') return key;
                     const field = {...frappe.meta.get_docfield(frm.doctype, key, frm.doc.name), read_only: 0};
+                    if (key === 'header_type') field.change = update_header;
+                    if (['header_text', 'header_sample_handle'].includes(key)) {
+                        // The dialog has its own values, independent of the open document.
+                        delete field.hidden_due_to_dependency;
+                        delete field.depends_on;
+                        delete field.mandatory_depends_on;
+                    }
                     if (field.fieldtype === 'Table') {
                         delete field.default;
                         field.fields = frappe.meta.get_docfields(field.options).map(df => ({...df}));
@@ -39,12 +54,13 @@ frappe.ui.form.on('WhatsApp Template', {
                     } else field.default = frm.doc[key];
                     return field;
                 });
-                const dialog = new frappe.ui.Dialog({title: __('Edit Template at Meta'), size: 'large', fields,
+                dialog = new frappe.ui.Dialog({title: __('Edit Template at Meta'), size: 'large', fields,
                     primary_action_label: __('Submit Changes'), primary_action: async values => {
                         // Empty tables are omitted by get_values; include intentional deletions.
                         for (const key of ['variables', 'buttons']) values[key] = dialog.fields_dict[key].get_value();
                         await whatsit.call('api.templates.edit', {template: frm.doc.name, changes: values, from_number: frm.doc.sender}); dialog.hide(); frm.reload_doc();
                     }});
+                update_header();
                 dialog.show();
             });
         }
