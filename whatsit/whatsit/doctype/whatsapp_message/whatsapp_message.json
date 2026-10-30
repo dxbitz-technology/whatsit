@@ -5,45 +5,67 @@
   "engine": "InnoDB",
   "istable": 0,
   "field_order": [
-    "direction",
+    "message_tab",
+    "message_section",
     "sender",
     "remote_number",
-    "party_type",
-    "party",
     "conversation",
+    "message_column",
+    "direction",
     "message_type",
-    "text",
-    "response_payload",
-    "template",
-    "template_parameters_json",
-    "media_file",
-    "meta_media_id",
-    "meta_message_id",
     "status",
-    "error_code",
-    "error_details",
+    "content_section",
+    "text",
+    "attachment_section",
+    "template",
+    "attachment_column",
+    "media_file",
+    "template_values_section",
+    "template_parameters_json",
+    "reply_payload_section",
+    "response_payload",
+    "delivery_tab",
+    "timestamps_section",
     "sent_at",
     "delivered_at",
+    "timestamps_column",
     "read_at",
     "received_at",
-    "reference_doctype",
-    "reference_name",
+    "failure_section",
+    "error_code",
+    "error_details",
+    "retry_section",
     "retry_count",
+    "retry_column",
     "last_attempt_at",
     "next_attempt_at",
+    "details_tab",
+    "references_section",
+    "party_type",
+    "party",
+    "references_column",
+    "reference_doctype",
+    "reference_name",
+    "ids_section",
+    "meta_message_id",
+    "meta_media_id",
+    "ids_column",
     "idempotency_key",
-    "request_hash",
     "requested_by",
+    "request_hash",
+    "request_section",
     "request_payload"
   ],
   "fields": [
     {
-      "fieldname": "direction",
-      "label": "Direction",
-      "fieldtype": "Select",
-      "options": "Incoming\nOutgoing",
-      "reqd": 1,
-      "in_list_view": 1
+      "fieldname": "message_tab",
+      "fieldtype": "Tab Break",
+      "label": "Message"
+    },
+    {
+      "fieldname": "message_section",
+      "fieldtype": "Section Break",
+      "label": "Message"
     },
     {
       "fieldname": "sender",
@@ -51,44 +73,108 @@
       "fieldtype": "Link",
       "options": "WhatsApp Number",
       "reqd": 1,
-      "in_list_view": 1
+      "in_list_view": 1,
+      "read_only": 1
     },
     {
       "fieldname": "remote_number",
       "label": "Recipient",
       "fieldtype": "Data",
       "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "party_type",
-      "label": "Party Type",
-      "fieldtype": "Link",
-      "options": "DocType"
-    },
-    {
-      "fieldname": "party",
-      "label": "Party",
-      "fieldtype": "Dynamic Link",
-      "options": "party_type"
+      "in_list_view": 1,
+      "read_only": 1,
+      "length": 16
     },
     {
       "fieldname": "conversation",
       "label": "Conversation",
       "fieldtype": "Link",
-      "options": "WhatsApp Conversation"
+      "options": "WhatsApp Conversation",
+      "read_only": 1
+    },
+    {
+      "fieldname": "message_column",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "direction",
+      "label": "Direction",
+      "fieldtype": "Select",
+      "options": "Incoming\nOutgoing",
+      "reqd": 1,
+      "in_list_view": 1,
+      "read_only": 1
     },
     {
       "fieldname": "message_type",
       "label": "Type",
       "fieldtype": "Select",
       "options": "Text\nTemplate\nImage\nDocument",
-      "reqd": 1
+      "reqd": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "status",
+      "label": "Status",
+      "fieldtype": "Select",
+      "options": "Queued\nSending\nSent\nDelivered\nRead\nFailed\nReceived\nUnknown",
+      "default": "Queued",
+      "in_list_view": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "content_section",
+      "fieldtype": "Section Break",
+      "label": "Content"
     },
     {
       "fieldname": "text",
       "label": "Message",
-      "fieldtype": "Text"
+      "fieldtype": "Text",
+      "read_only": 1
+    },
+    {
+      "fieldname": "attachment_section",
+      "fieldtype": "Section Break",
+      "label": "Template and Attachment"
+    },
+    {
+      "fieldname": "template",
+      "label": "Template",
+      "fieldtype": "Link",
+      "options": "WhatsApp Template",
+      "read_only": 1
+    },
+    {
+      "fieldname": "attachment_column",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "media_file",
+      "label": "Attachment",
+      "fieldtype": "Link",
+      "options": "File",
+      "read_only": 1
+    },
+    {
+      "fieldname": "template_values_section",
+      "fieldtype": "Section Break",
+      "label": "Template Values",
+      "depends_on": "eval:doc.message_type === 'Template'"
+    },
+    {
+      "fieldname": "template_parameters_json",
+      "label": "Template Values",
+      "fieldtype": "Code",
+      "options": "JSON",
+      "read_only": 1
+    },
+    {
+      "fieldname": "reply_payload_section",
+      "fieldtype": "Section Break",
+      "label": "Reply Value",
+      "collapsible": 1,
+      "depends_on": "eval:doc.response_payload"
     },
     {
       "fieldname": "response_payload",
@@ -97,124 +183,191 @@
       "read_only": 1
     },
     {
-      "fieldname": "template",
-      "label": "Template",
-      "fieldtype": "Link",
-      "options": "WhatsApp Template"
+      "fieldname": "delivery_tab",
+      "fieldtype": "Tab Break",
+      "label": "Delivery"
     },
     {
-      "fieldname": "template_parameters_json",
-      "label": "Template Values",
-      "fieldtype": "Code",
-      "options": "JSON"
-    },
-    {
-      "fieldname": "media_file",
-      "label": "Attachment",
-      "fieldtype": "Link",
-      "options": "File"
-    },
-    {
-      "fieldname": "meta_media_id",
-      "label": "Meta Media ID",
-      "fieldtype": "Data"
-    },
-    {
-      "fieldname": "meta_message_id",
-      "label": "Meta Message ID",
-      "fieldtype": "Data",
-      "unique": 1
-    },
-    {
-      "fieldname": "status",
-      "label": "Status",
-      "fieldtype": "Select",
-      "options": "Queued\nSending\nSent\nDelivered\nRead\nFailed\nReceived\nUnknown",
-      "default": "Queued",
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "error_code",
-      "label": "Error Code",
-      "fieldtype": "Data"
-    },
-    {
-      "fieldname": "error_details",
-      "label": "Error",
-      "fieldtype": "Small Text"
+      "fieldname": "timestamps_section",
+      "fieldtype": "Section Break",
+      "label": "Delivery Times"
     },
     {
       "fieldname": "sent_at",
       "label": "Sent At",
-      "fieldtype": "Datetime"
+      "fieldtype": "Datetime",
+      "read_only": 1
     },
     {
       "fieldname": "delivered_at",
       "label": "Delivered At",
-      "fieldtype": "Datetime"
+      "fieldtype": "Datetime",
+      "read_only": 1
+    },
+    {
+      "fieldname": "timestamps_column",
+      "fieldtype": "Column Break"
     },
     {
       "fieldname": "read_at",
       "label": "Read At",
-      "fieldtype": "Datetime"
+      "fieldtype": "Datetime",
+      "read_only": 1
     },
     {
       "fieldname": "received_at",
       "label": "Received At",
-      "fieldtype": "Datetime"
+      "fieldtype": "Datetime",
+      "read_only": 1
     },
     {
-      "fieldname": "reference_doctype",
-      "label": "Reference Type",
-      "fieldtype": "Link",
-      "options": "DocType"
+      "fieldname": "failure_section",
+      "fieldtype": "Section Break",
+      "label": "Error",
+      "depends_on": "eval:doc.error_code || doc.error_details"
     },
     {
-      "fieldname": "reference_name",
-      "label": "Reference",
-      "fieldtype": "Dynamic Link",
-      "options": "reference_doctype"
+      "fieldname": "error_code",
+      "label": "Error Code",
+      "fieldtype": "Data",
+      "read_only": 1
+    },
+    {
+      "fieldname": "error_details",
+      "label": "Error",
+      "fieldtype": "Small Text",
+      "read_only": 1
+    },
+    {
+      "fieldname": "retry_section",
+      "fieldtype": "Section Break",
+      "label": "Retry"
     },
     {
       "fieldname": "retry_count",
       "label": "Retries",
       "fieldtype": "Int",
-      "default": 0
+      "default": 0,
+      "read_only": 1,
+      "non_negative": 1
+    },
+    {
+      "fieldname": "retry_column",
+      "fieldtype": "Column Break"
     },
     {
       "fieldname": "last_attempt_at",
       "label": "Last Attempt",
-      "fieldtype": "Datetime"
+      "fieldtype": "Datetime",
+      "read_only": 1
     },
     {
       "fieldname": "next_attempt_at",
       "label": "Next Attempt",
-      "fieldtype": "Datetime"
+      "fieldtype": "Datetime",
+      "read_only": 1
+    },
+    {
+      "fieldname": "details_tab",
+      "fieldtype": "Tab Break",
+      "label": "Details"
+    },
+    {
+      "fieldname": "references_section",
+      "fieldtype": "Section Break",
+      "label": "Linked Records"
+    },
+    {
+      "fieldname": "party_type",
+      "label": "Party Type",
+      "fieldtype": "Link",
+      "options": "DocType",
+      "read_only": 1
+    },
+    {
+      "fieldname": "party",
+      "label": "Party",
+      "fieldtype": "Dynamic Link",
+      "options": "party_type",
+      "read_only": 1,
+      "depends_on": "eval:doc.party_type"
+    },
+    {
+      "fieldname": "references_column",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "reference_doctype",
+      "label": "Reference Type",
+      "fieldtype": "Link",
+      "options": "DocType",
+      "read_only": 1
+    },
+    {
+      "fieldname": "reference_name",
+      "label": "Reference",
+      "fieldtype": "Dynamic Link",
+      "options": "reference_doctype",
+      "read_only": 1,
+      "depends_on": "eval:doc.reference_doctype"
+    },
+    {
+      "fieldname": "ids_section",
+      "fieldtype": "Section Break",
+      "label": "Tracking"
+    },
+    {
+      "fieldname": "meta_message_id",
+      "label": "Meta Message ID",
+      "fieldtype": "Data",
+      "unique": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "meta_media_id",
+      "label": "Meta Media ID",
+      "fieldtype": "Data",
+      "read_only": 1
+    },
+    {
+      "fieldname": "ids_column",
+      "fieldtype": "Column Break"
     },
     {
       "fieldname": "idempotency_key",
       "label": "Request Key",
       "fieldtype": "Data",
-      "unique": 1
-    },
-    {
-      "fieldname": "request_hash",
-      "label": "Request Hash",
-      "fieldtype": "Data",
-      "hidden": 1
+      "unique": 1,
+      "read_only": 1
     },
     {
       "fieldname": "requested_by",
       "label": "Requested By",
       "fieldtype": "Link",
-      "options": "User"
+      "options": "User",
+      "read_only": 1
+    },
+    {
+      "fieldname": "request_hash",
+      "label": "Request Hash",
+      "fieldtype": "Data",
+      "hidden": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "request_section",
+      "fieldtype": "Section Break",
+      "label": "Request Payload",
+      "collapsible": 1,
+      "permlevel": 1
     },
     {
       "fieldname": "request_payload",
       "label": "Request Payload",
       "fieldtype": "Code",
       "options": "JSON",
-      "permlevel": 1
+      "permlevel": 1,
+      "read_only": 1
     }
   ],
   "permissions": [

@@ -1,4 +1,7 @@
 frappe.ui.form.on('WhatsApp Number', {
+    setup(frm) {
+        frm.set_query('user', 'allowed_users', () => ({filters: {enabled: 1, user_type: 'System User'}}));
+    },
     refresh(frm) {
         if (frm.is_new()) return;
         frm.add_custom_button(__('Open Inbox'), () => frappe.set_route('whatsapp-inbox'));

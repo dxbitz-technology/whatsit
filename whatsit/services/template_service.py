@@ -20,6 +20,9 @@ EDITABLE = (
 
 
 def validate_template(doc):
+    from whatsit.services.form_validation import validate_template_fields
+
+    validate_template_fields(doc)
     if not re.fullmatch(r"[a-z0-9_]+", doc.template_name or ""):
         frappe.throw("Use lowercase letters, numbers and underscores for Template Name.")
     if doc.sender and frappe.db.get_value("WhatsApp Number", doc.sender, "waba_id") != doc.waba_id:

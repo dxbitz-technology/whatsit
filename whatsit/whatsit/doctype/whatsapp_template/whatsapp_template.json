@@ -5,62 +5,60 @@
   "engine": "InnoDB",
   "istable": 0,
   "field_order": [
-    "waba_id",
-    "sender",
-    "meta_template_id",
+    "template_section",
     "template_name",
     "language",
     "category",
+    "template_column",
+    "sender",
+    "waba_id",
+    "status",
+    "header_section",
     "header_type",
+    "header_column",
     "header_text",
     "header_sample_handle",
+    "message_section",
     "body",
     "footer",
+    "variables_section",
     "variables",
+    "buttons_section",
     "buttons",
-    "status",
+    "approval_section",
     "rejection_reason",
     "sync_error",
+    "meta_details_section",
+    "meta_template_id",
     "quality_rating",
-    "last_synced_at",
+    "meta_details_column",
     "last_submitted_at",
+    "last_synced_at",
+    "meta_response_section",
     "meta_response"
   ],
   "fields": [
     {
-      "fieldname": "waba_id",
-      "label": "Business Account ID",
-      "fieldtype": "Data",
-      "reqd": 1,
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "sender",
-      "label": "Sender",
-      "fieldtype": "Link",
-      "options": "WhatsApp Number"
-    },
-    {
-      "fieldname": "meta_template_id",
-      "label": "Meta Template ID",
-      "fieldtype": "Data",
-      "read_only": 1,
-      "unique": 1
+      "fieldname": "template_section",
+      "fieldtype": "Section Break",
+      "label": "Template"
     },
     {
       "fieldname": "template_name",
       "label": "Template Name",
       "fieldtype": "Data",
       "reqd": 1,
-      "in_list_view": 1
+      "in_list_view": 1,
+      "length": 512
     },
     {
       "fieldname": "language",
-      "label": "Language",
+      "label": "Language Code",
       "fieldtype": "Data",
       "default": "en",
       "reqd": 1,
-      "in_list_view": 1
+      "in_list_view": 1,
+      "length": 10
     },
     {
       "fieldname": "category",
@@ -71,44 +69,22 @@
       "reqd": 1
     },
     {
-      "fieldname": "header_type",
-      "label": "Header",
-      "fieldtype": "Select",
-      "options": "NONE\nTEXT\nIMAGE\nDOCUMENT",
-      "default": "NONE"
+      "fieldname": "template_column",
+      "fieldtype": "Column Break"
     },
     {
-      "fieldname": "header_text",
-      "label": "Header Text",
-      "fieldtype": "Data"
+      "fieldname": "sender",
+      "label": "Sender",
+      "fieldtype": "Link",
+      "options": "WhatsApp Number"
     },
     {
-      "fieldname": "header_sample_handle",
-      "label": "Media Sample Handle",
-      "fieldtype": "Data"
-    },
-    {
-      "fieldname": "body",
-      "label": "Body",
-      "fieldtype": "Text",
-      "reqd": 1
-    },
-    {
-      "fieldname": "footer",
-      "label": "Footer",
-      "fieldtype": "Data"
-    },
-    {
-      "fieldname": "variables",
-      "label": "Variables",
-      "fieldtype": "Table",
-      "options": "WhatsApp Template Variable"
-    },
-    {
-      "fieldname": "buttons",
-      "label": "Buttons",
-      "fieldtype": "Table",
-      "options": "WhatsApp Template Button"
+      "fieldname": "waba_id",
+      "label": "Business Account ID",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "in_list_view": 1,
+      "length": 32
     },
     {
       "fieldname": "status",
@@ -117,6 +93,80 @@
       "read_only": 1,
       "default": "DRAFT",
       "in_list_view": 1
+    },
+    {
+      "fieldname": "header_section",
+      "fieldtype": "Section Break",
+      "label": "Header"
+    },
+    {
+      "fieldname": "header_type",
+      "label": "Header",
+      "fieldtype": "Select",
+      "options": "NONE\nTEXT\nIMAGE\nDOCUMENT",
+      "default": "NONE"
+    },
+    {
+      "fieldname": "header_column",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "header_text",
+      "label": "Header Text",
+      "fieldtype": "Data",
+      "depends_on": "eval:doc.header_type === 'TEXT'",
+      "mandatory_depends_on": "eval:doc.header_type === 'TEXT'",
+      "length": 60
+    },
+    {
+      "fieldname": "header_sample_handle",
+      "label": "Media Sample Handle",
+      "fieldtype": "Data",
+      "depends_on": "eval:['IMAGE', 'DOCUMENT'].includes(doc.header_type)"
+    },
+    {
+      "fieldname": "message_section",
+      "fieldtype": "Section Break",
+      "label": "Message"
+    },
+    {
+      "fieldname": "body",
+      "label": "Body",
+      "fieldtype": "Text",
+      "reqd": 1,
+      "max_height": "180px"
+    },
+    {
+      "fieldname": "footer",
+      "label": "Footer",
+      "fieldtype": "Data",
+      "length": 60
+    },
+    {
+      "fieldname": "variables_section",
+      "fieldtype": "Section Break"
+    },
+    {
+      "fieldname": "variables",
+      "label": "Variables",
+      "fieldtype": "Table",
+      "options": "WhatsApp Template Variable"
+    },
+    {
+      "fieldname": "buttons_section",
+      "fieldtype": "Section Break"
+    },
+    {
+      "fieldname": "buttons",
+      "label": "Buttons",
+      "fieldtype": "Table",
+      "options": "WhatsApp Template Button"
+    },
+    {
+      "fieldname": "approval_section",
+      "fieldtype": "Section Break",
+      "label": "Approval",
+      "depends_on": "eval:doc.rejection_reason || doc.sync_error"
     },
     {
       "fieldname": "rejection_reason",
@@ -131,9 +181,32 @@
       "read_only": 1
     },
     {
+      "fieldname": "meta_details_section",
+      "fieldtype": "Section Break",
+      "label": "Meta Details",
+      "collapsible": 1
+    },
+    {
+      "fieldname": "meta_template_id",
+      "label": "Meta Template ID",
+      "fieldtype": "Data",
+      "read_only": 1,
+      "unique": 1
+    },
+    {
       "fieldname": "quality_rating",
       "label": "Quality",
       "fieldtype": "Data",
+      "read_only": 1
+    },
+    {
+      "fieldname": "meta_details_column",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "last_submitted_at",
+      "label": "Last Submitted",
+      "fieldtype": "Datetime",
       "read_only": 1
     },
     {
@@ -143,10 +216,11 @@
       "read_only": 1
     },
     {
-      "fieldname": "last_submitted_at",
-      "label": "Last Submitted",
-      "fieldtype": "Datetime",
-      "read_only": 1
+      "fieldname": "meta_response_section",
+      "fieldtype": "Section Break",
+      "label": "Meta Response",
+      "collapsible": 1,
+      "permlevel": 1
     },
     {
       "fieldname": "meta_response",

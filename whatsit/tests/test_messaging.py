@@ -1231,3 +1231,138 @@ class TestMessaging(FrappeTestCase):
         execute()
         execute()
         self.assertEqual(frappe.db.get_value("WhatsApp Conversation", name, "party"), contact.name)
+
+    def test_setup_forms_trim_names_and_reject_invalid_ids(self):
+        self.app.display_name = "  Support App  "
+        self.app.meta_app_id = " 123456 "
+        self.app.save()
+        self.assertEqual(self.app.display_name, "Support App")
+        self.assertEqual(self.app.meta_app_id, "123456")
+        self.app.meta_app_id = "123x"
+        with self.assertRaises(frappe.ValidationError):
+            self.app.save()
+        self.number.display_name = "  Sales  "
+        self.number.save()
+        self.assertEqual(self.number.title, "Sales (+971501234567)")
+        self.number.api_version = "26"
+        with self.assertRaises(frappe.ValidationError):
+            self.number.save()
+
+    def test_sender_access_requires_active_users_with_whatsapp_roles(self):
+        user = self.make_user()
+        frappe.db.set_value("User", user, "enabled", 0)
+        self.number.append("allowed_users", {"user": user})
+        with self.assertRaisesRegex(frappe.ValidationError, "enabled"):
+            self.number.save()
+        frappe.db.set_value("User", user, "enabled", 1)
+        self.number.reload()
+        self.number.append("allowed_users", {"user": user})
+        self.number.append("allowed_users", {"user": user})
+        with self.assertRaisesRegex(frappe.ValidationError, "only once"):
+            self.number.save()
+
+    def test_template_form_requires_matching_header_and_valid_language(self):
+        self.template.header_type = "TEXT"
+        with self.assertRaisesRegex(frappe.ValidationError, "Header Text"):
+            self.template.save()
+        self.template.reload()
+        self.template.header_type = "TEXT"
+        self.template.header_text = "Invoice"
+        self.template.language = "English"
+        with self.assertRaisesRegex(frappe.ValidationError, "language code"):
+            self.template.save()
+        self.template.reload()
+        self.template.header_type = "TEXT"
+        self.template.header_text = "Invoice"
+        self.template.language = "en_US"
+        self.template.save()
+        self.assertEqual(self.template.header_text, "Invoice")
+
+    def test_template_form_rejects_duplicate_and_invalid_variable_positions(self):
+        self.template.append(
+            "variables", {"component": "BODY", "parameter_index": 1, "sample_value": "Other"}
+        )
+        with self.assertRaisesRegex(frappe.ValidationError, "only once"):
+            self.template.save()
+        self.template.reload()
+        self.template.variables[0].parameter_index = 0
+        with self.assertRaisesRegex(frappe.ValidationError, "1 or greater"):
+            self.template.save()
+        self.template.reload()
+        self.template.variables[0].parameter_name = "Not valid!"
+        with self.assertRaisesRegex(frappe.ValidationError, "Variable Name"):
+            self.template.save()
+
+    def test_template_form_validates_button_details_on_save(self):
+        self.template.append("buttons", {"type": "URL", "text": "View Invoice", "url": "https://"})
+        with self.assertRaisesRegex(frappe.ValidationError, "HTTPS"):
+            self.template.save()
+        self.template.reload()
+        button = self.template.append(
+            "buttons", {"type": "URL", "text": "View Invoice", "url": "https://example.com/invoice/{{1}}"}
+        )
+        with self.assertRaisesRegex(frappe.ValidationError, "sample"):
+            self.template.save()
+        self.template.reload()
+        button = self.template.append(
+            "buttons",
+            {
+                "type": "URL",
+                "text": "View Invoice",
+                "url": "https://example.com/invoice/{{1}}",
+                "sample_value": "https://example.com/invoice/INV-001",
+            },
+        )
+        self.template.save()
+        button.type = "PHONE_NUMBER"
+        button.phone_number = "0501234567"
+        with self.assertRaises(frappe.ValidationError):
+            self.template.save()
+        self.template.reload()
+        button = self.template.buttons[0]
+        button.type = "PHONE_NUMBER"
+        button.phone_number = "+971 50 123 4567"
+        self.template.save()
+        self.assertEqual(button.phone_number, "+971501234567")
+
+    def test_template_form_rejects_missing_button_variable_targets(self):
+        self.template.append(
+            "variables",
+            {"component": "BUTTON", "button_index": 0, "parameter_index": 1, "sample_value": "INV-001"},
+        )
+        with self.assertRaisesRegex(frappe.ValidationError, "existing URL button"):
+            self.template.save()
+
+    def test_system_records_validate_json_and_numeric_values(self):
+        event = frappe.get_doc(
+            {
+                "doctype": "WhatsApp Webhook Event",
+                "meta_app": self.app.name,
+                "event_key": "invalid-event",
+                "payload": "{broken",
+            }
+        )
+        with self.assertRaisesRegex(frappe.ValidationError, "valid JSON"):
+            event.insert()
+        event.payload = "[]"
+        with self.assertRaisesRegex(frappe.ValidationError, "JSON object"):
+            event.insert()
+        event.payload = "{}"
+        event.attempt_count = -1
+        with self.assertRaisesRegex(frappe.ValidationError, "negative"):
+            event.insert()
+        log = frappe.get_doc({"doctype": "WhatsApp API Log", "operation": "test", "http_status": 999})
+        with self.assertRaisesRegex(frappe.ValidationError, "HTTP Status"):
+            log.insert()
+
+    def test_message_form_rejects_incomplete_links_and_invalid_json(self):
+        message = frappe.get_doc("WhatsApp Message", self.queued_template()["message_id"])
+        message.flags.internal_update = True
+        message.reference_doctype = "Contact"
+        with self.assertRaisesRegex(frappe.ValidationError, "both"):
+            message.save()
+        message.reload()
+        message.flags.internal_update = True
+        message.template_parameters_json = "[]"
+        with self.assertRaisesRegex(frappe.ValidationError, "JSON object"):
+            message.save()

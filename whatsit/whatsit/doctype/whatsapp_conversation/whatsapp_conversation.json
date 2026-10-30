@@ -5,44 +5,106 @@
   "engine": "InnoDB",
   "istable": 0,
   "field_order": [
+    "conversation_section",
     "sender",
     "remote_number",
+    "conversation_column",
+    "status",
+    "unread_count",
+    "party_section",
     "party_type",
+    "party_column",
     "party",
+    "latest_message_section",
+    "last_message_preview",
+    "activity_section",
     "last_message_at",
     "last_incoming_at",
-    "service_window_expires_at",
-    "unread_count",
-    "last_message_preview",
-    "status"
+    "activity_column",
+    "service_window_expires_at"
   ],
   "fields": [
+    {
+      "fieldname": "conversation_section",
+      "fieldtype": "Section Break",
+      "label": "Conversation"
+    },
     {
       "fieldname": "sender",
       "label": "Sender",
       "fieldtype": "Link",
       "options": "WhatsApp Number",
       "reqd": 1,
-      "in_list_view": 1
+      "in_list_view": 1,
+      "read_only": 1
     },
     {
       "fieldname": "remote_number",
       "label": "Recipient",
       "fieldtype": "Data",
       "reqd": 1,
-      "in_list_view": 1
+      "in_list_view": 1,
+      "read_only": 1,
+      "length": 16
+    },
+    {
+      "fieldname": "conversation_column",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "status",
+      "label": "Status",
+      "fieldtype": "Select",
+      "options": "Open\nClosed",
+      "default": "Open"
+    },
+    {
+      "fieldname": "unread_count",
+      "label": "Unread",
+      "fieldtype": "Int",
+      "read_only": 1,
+      "default": 0,
+      "non_negative": 1
+    },
+    {
+      "fieldname": "party_section",
+      "fieldtype": "Section Break",
+      "label": "Party"
     },
     {
       "fieldname": "party_type",
       "label": "Party Type",
       "fieldtype": "Link",
-      "options": "DocType"
+      "options": "DocType",
+      "read_only": 1
+    },
+    {
+      "fieldname": "party_column",
+      "fieldtype": "Column Break"
     },
     {
       "fieldname": "party",
       "label": "Party",
       "fieldtype": "Dynamic Link",
-      "options": "party_type"
+      "options": "party_type",
+      "read_only": 1,
+      "depends_on": "eval:doc.party_type"
+    },
+    {
+      "fieldname": "latest_message_section",
+      "fieldtype": "Section Break",
+      "label": "Last Message"
+    },
+    {
+      "fieldname": "last_message_preview",
+      "label": "Last Message",
+      "fieldtype": "Small Text",
+      "read_only": 1
+    },
+    {
+      "fieldname": "activity_section",
+      "fieldtype": "Section Break",
+      "label": "Activity"
     },
     {
       "fieldname": "last_message_at",
@@ -58,30 +120,14 @@
       "read_only": 1
     },
     {
+      "fieldname": "activity_column",
+      "fieldtype": "Column Break"
+    },
+    {
       "fieldname": "service_window_expires_at",
       "label": "Reply Until",
       "fieldtype": "Datetime",
       "read_only": 1
-    },
-    {
-      "fieldname": "unread_count",
-      "label": "Unread",
-      "fieldtype": "Int",
-      "read_only": 1,
-      "default": 0
-    },
-    {
-      "fieldname": "last_message_preview",
-      "label": "Last Message",
-      "fieldtype": "Small Text",
-      "read_only": 1
-    },
-    {
-      "fieldname": "status",
-      "label": "Status",
-      "fieldtype": "Select",
-      "options": "Open\nClosed",
-      "default": "Open"
     }
   ],
   "permissions": [

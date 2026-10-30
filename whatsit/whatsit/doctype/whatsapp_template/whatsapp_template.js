@@ -17,7 +17,20 @@ frappe.ui.form.on('WhatsApp Template', {
             const editable = ['category','header_type','header_text','header_sample_handle','body','footer','variables','buttons'];
             editable.concat(['template_name','language','waba_id']).forEach(key => frm.set_df_property(key, 'read_only', 1));
             frm.add_custom_button(__('Edit at Meta'), () => {
-                const fields = editable.map(key => {
+                const layout = [
+                    {fieldname: 'editor_header', fieldtype: 'Section Break', label: __('Template')},
+                    'category', 'header_type',
+                    {fieldname: 'editor_header_column', fieldtype: 'Column Break'},
+                    'header_text', 'header_sample_handle',
+                    {fieldname: 'editor_message', fieldtype: 'Section Break', label: __('Message')},
+                    'body', 'footer',
+                    {fieldname: 'editor_variables', fieldtype: 'Section Break', label: __('Variables')},
+                    'variables',
+                    {fieldname: 'editor_buttons', fieldtype: 'Section Break', label: __('Buttons')},
+                    'buttons',
+                ];
+                const fields = layout.map(key => {
+                    if (typeof key !== 'string') return key;
                     const field = {...frappe.meta.get_docfield(frm.doctype, key, frm.doc.name), read_only: 0};
                     if (field.fieldtype === 'Table') {
                         delete field.default;

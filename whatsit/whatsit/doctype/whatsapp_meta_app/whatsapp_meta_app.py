@@ -9,6 +9,10 @@ class WhatsAppMetaApp(Document):
         self.route_key = secrets.token_urlsafe(32)
 
     def validate(self):
+        from whatsit.services.form_validation import clean_text, numeric_id
+
+        clean_text(self, "display_name")
+        numeric_id(self, "meta_app_id")
         if not str(self.meta_app_id).isdigit():
             frappe.throw("Meta App ID must contain digits only.")
         if not self.is_new():

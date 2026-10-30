@@ -5,42 +5,68 @@
   "engine": "InnoDB",
   "istable": 1,
   "field_order": [
+    "button_section",
     "type",
     "text",
+    "button_column",
     "url",
     "phone_number",
     "sample_value"
   ],
   "fields": [
     {
+      "fieldname": "button_section",
+      "fieldtype": "Section Break",
+      "label": "Button"
+    },
+    {
       "fieldname": "type",
       "label": "Type",
       "fieldtype": "Select",
       "options": "QUICK_REPLY\nURL\nPHONE_NUMBER",
       "reqd": 1,
-      "in_list_view": 1
+      "in_list_view": 1,
+      "columns": 2
     },
     {
       "fieldname": "text",
       "label": "Text",
       "fieldtype": "Data",
       "reqd": 1,
-      "in_list_view": 1
+      "in_list_view": 1,
+      "columns": 3,
+      "length": 25
+    },
+    {
+      "fieldname": "button_column",
+      "fieldtype": "Column Break"
     },
     {
       "fieldname": "url",
       "label": "URL",
-      "fieldtype": "Data"
+      "fieldtype": "Data",
+      "depends_on": "eval:doc.type === 'URL'",
+      "mandatory_depends_on": "eval:doc.type === 'URL'",
+      "in_list_view": 1,
+      "columns": 3,
+      "length": 2000
     },
     {
       "fieldname": "phone_number",
       "label": "Phone Number",
-      "fieldtype": "Data"
+      "fieldtype": "Data",
+      "depends_on": "eval:doc.type === 'PHONE_NUMBER'",
+      "mandatory_depends_on": "eval:doc.type === 'PHONE_NUMBER'",
+      "in_list_view": 1,
+      "columns": 2,
+      "length": 16
     },
     {
       "fieldname": "sample_value",
       "label": "Sample",
-      "fieldtype": "Data"
+      "fieldtype": "Data",
+      "mandatory_depends_on": "eval:doc.type === 'URL' && (doc.url || '').includes('{{1}}')",
+      "depends_on": "eval:doc.type === 'URL' && (doc.url || '').includes('{{1}}')"
     }
   ],
   "permissions": [],

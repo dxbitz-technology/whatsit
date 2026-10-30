@@ -4,6 +4,12 @@ from frappe.model.document import Document
 
 class WhatsAppConversation(Document):
     def validate(self):
+        from whatsit.services.form_validation import linked_pair, non_negative
+        from whatsit.services.number_service import normalize_phone
+
+        self.remote_number = normalize_phone(self.remote_number)
+        linked_pair(self, "party_type", "party")
+        non_negative(self, "unread_count")
         if not self.flags.internal_update:
             old = self.get_doc_before_save()
             if not old or any(

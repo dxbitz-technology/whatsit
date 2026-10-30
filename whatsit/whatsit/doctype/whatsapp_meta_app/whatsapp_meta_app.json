@@ -5,17 +5,29 @@
   "engine": "InnoDB",
   "istable": 0,
   "field_order": [
+    "app_section",
     "display_name",
-    "meta_app_id",
-    "app_secret",
-    "verify_token",
     "enabled",
-    "route_key",
+    "app_column",
+    "meta_app_id",
+    "credentials_section",
+    "app_secret",
+    "credentials_column",
+    "verify_token",
+    "webhook_section",
     "webhook_url",
+    "webhook_activity_section",
     "webhook_verified_at",
-    "last_webhook_at"
+    "webhook_activity_column",
+    "last_webhook_at",
+    "route_key"
   ],
   "fields": [
+    {
+      "fieldname": "app_section",
+      "fieldtype": "Section Break",
+      "label": "App"
+    },
     {
       "fieldname": "display_name",
       "label": "App Name",
@@ -25,11 +37,28 @@
       "in_list_view": 1
     },
     {
+      "fieldname": "enabled",
+      "label": "Enabled",
+      "fieldtype": "Check",
+      "default": 1
+    },
+    {
+      "fieldname": "app_column",
+      "fieldtype": "Column Break"
+    },
+    {
       "fieldname": "meta_app_id",
       "label": "Meta App ID",
       "fieldtype": "Data",
       "reqd": 1,
-      "unique": 1
+      "unique": 1,
+      "length": 32
+    },
+    {
+      "fieldname": "credentials_section",
+      "fieldtype": "Section Break",
+      "label": "Credentials",
+      "permlevel": 1
     },
     {
       "fieldname": "app_secret",
@@ -39,6 +68,10 @@
       "permlevel": 1
     },
     {
+      "fieldname": "credentials_column",
+      "fieldtype": "Column Break"
+    },
+    {
       "fieldname": "verify_token",
       "label": "Verify Token",
       "fieldtype": "Password",
@@ -46,18 +79,9 @@
       "permlevel": 1
     },
     {
-      "fieldname": "enabled",
-      "label": "Enabled",
-      "fieldtype": "Check",
-      "default": 1
-    },
-    {
-      "fieldname": "route_key",
-      "label": "Webhook Key",
-      "fieldtype": "Data",
-      "read_only": 1,
-      "hidden": 1,
-      "unique": 1
+      "fieldname": "webhook_section",
+      "fieldtype": "Section Break",
+      "label": "Webhook"
     },
     {
       "fieldname": "webhook_url",
@@ -66,16 +90,32 @@
       "read_only": 1
     },
     {
+      "fieldname": "webhook_activity_section",
+      "fieldtype": "Section Break"
+    },
+    {
       "fieldname": "webhook_verified_at",
       "label": "Verified At",
       "fieldtype": "Datetime",
       "read_only": 1
     },
     {
+      "fieldname": "webhook_activity_column",
+      "fieldtype": "Column Break"
+    },
+    {
       "fieldname": "last_webhook_at",
       "label": "Last Webhook",
       "fieldtype": "Datetime",
       "read_only": 1
+    },
+    {
+      "fieldname": "route_key",
+      "label": "Webhook Key",
+      "fieldtype": "Data",
+      "read_only": 1,
+      "hidden": 1,
+      "unique": 1
     }
   ],
   "permissions": [

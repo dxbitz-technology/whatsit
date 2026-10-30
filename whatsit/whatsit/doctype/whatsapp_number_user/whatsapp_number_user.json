@@ -5,16 +5,23 @@
   "engine": "InnoDB",
   "istable": 1,
   "field_order": [
+    "user_section",
     "user"
   ],
   "fields": [
+    {
+      "fieldname": "user_section",
+      "fieldtype": "Section Break",
+      "label": "Access"
+    },
     {
       "fieldname": "user",
       "label": "User",
       "fieldtype": "Link",
       "options": "User",
       "reqd": 1,
-      "in_list_view": 1
+      "in_list_view": 1,
+      "columns": 10
     }
   ],
   "permissions": [],

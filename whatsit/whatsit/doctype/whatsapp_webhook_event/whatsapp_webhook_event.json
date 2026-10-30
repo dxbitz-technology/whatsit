@@ -5,18 +5,48 @@
   "engine": "InnoDB",
   "istable": 0,
   "field_order": [
-    "received_at",
+    "event_section",
     "meta_app",
-    "event_key",
     "event_type",
-    "payload",
+    "event_column",
+    "received_at",
     "processing_status",
+    "processing_section",
     "attempt_count",
-    "last_error",
     "processed_at",
-    "next_attempt_at"
+    "processing_column",
+    "next_attempt_at",
+    "error_section",
+    "last_error",
+    "payload_section",
+    "event_key",
+    "payload"
   ],
   "fields": [
+    {
+      "fieldname": "event_section",
+      "fieldtype": "Section Break",
+      "label": "Event"
+    },
+    {
+      "fieldname": "meta_app",
+      "label": "Meta App",
+      "fieldtype": "Link",
+      "options": "WhatsApp Meta App",
+      "reqd": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "event_type",
+      "label": "Event Type",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "event_column",
+      "fieldtype": "Column Break"
+    },
     {
       "fieldname": "received_at",
       "label": "Received At",
@@ -25,60 +55,76 @@
       "in_list_view": 1
     },
     {
-      "fieldname": "meta_app",
-      "label": "Meta App",
-      "fieldtype": "Link",
-      "options": "WhatsApp Meta App",
-      "reqd": 1
+      "fieldname": "processing_status",
+      "label": "Status",
+      "fieldtype": "Select",
+      "options": "Queued\nProcessing\nProcessed\nFailed",
+      "default": "Queued",
+      "in_list_view": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "processing_section",
+      "fieldtype": "Section Break",
+      "label": "Processing"
+    },
+    {
+      "fieldname": "attempt_count",
+      "label": "Attempts",
+      "fieldtype": "Int",
+      "default": 0,
+      "read_only": 1,
+      "non_negative": 1
+    },
+    {
+      "fieldname": "processed_at",
+      "label": "Processed At",
+      "fieldtype": "Datetime",
+      "read_only": 1
+    },
+    {
+      "fieldname": "processing_column",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "next_attempt_at",
+      "label": "Next Attempt",
+      "fieldtype": "Datetime",
+      "read_only": 1
+    },
+    {
+      "fieldname": "error_section",
+      "fieldtype": "Section Break",
+      "label": "Error",
+      "depends_on": "eval:doc.last_error"
+    },
+    {
+      "fieldname": "last_error",
+      "label": "Error",
+      "fieldtype": "Small Text",
+      "read_only": 1
+    },
+    {
+      "fieldname": "payload_section",
+      "fieldtype": "Section Break",
+      "label": "Event Details",
+      "collapsible": 1
     },
     {
       "fieldname": "event_key",
       "label": "Event Key",
       "fieldtype": "Data",
       "reqd": 1,
-      "unique": 1
-    },
-    {
-      "fieldname": "event_type",
-      "label": "Event Type",
-      "fieldtype": "Data",
-      "in_list_view": 1
+      "unique": 1,
+      "read_only": 1
     },
     {
       "fieldname": "payload",
       "label": "Payload",
       "fieldtype": "Code",
       "options": "JSON",
-      "permlevel": 1
-    },
-    {
-      "fieldname": "processing_status",
-      "label": "Status",
-      "fieldtype": "Select",
-      "options": "Queued\nProcessing\nProcessed\nFailed",
-      "default": "Queued",
-      "in_list_view": 1
-    },
-    {
-      "fieldname": "attempt_count",
-      "label": "Attempts",
-      "fieldtype": "Int",
-      "default": 0
-    },
-    {
-      "fieldname": "last_error",
-      "label": "Error",
-      "fieldtype": "Small Text"
-    },
-    {
-      "fieldname": "processed_at",
-      "label": "Processed At",
-      "fieldtype": "Datetime"
-    },
-    {
-      "fieldname": "next_attempt_at",
-      "label": "Next Attempt",
-      "fieldtype": "Datetime"
+      "permlevel": 1,
+      "read_only": 1
     }
   ],
   "permissions": [

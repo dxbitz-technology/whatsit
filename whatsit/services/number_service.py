@@ -34,6 +34,11 @@ def resolve_sender(name=None, check_access=True):
 
 
 def validate_number(doc):
+    from whatsit.services.form_validation import clean_text, numeric_id
+
+    clean_text(doc, "display_name", "api_version")
+    numeric_id(doc, "meta_phone_number_id")
+    numeric_id(doc, "waba_id")
     doc.phone_number = normalize_phone(doc.phone_number)
     for key in ("meta_phone_number_id", "waba_id"):
         if not str(doc.get(key) or "").isdigit():
@@ -50,6 +55,13 @@ def validate_number(doc):
         frappe.throw("Another sender is already the default. Clear its Default Sender first.")
     # A unique nullable column is the database guard for concurrent default changes.
     users = [x.user for x in doc.allowed_users]
+    for user in users:
+        if not frappe.db.get_value("User", user, "enabled"):
+            frappe.throw("Allowed Users must be enabled users.")
+        if not {"WhatsApp Manager", "WhatsApp User", "WhatsApp API User"}.intersection(
+            frappe.get_roles(user)
+        ):
+            frappe.throw("Allowed Users need a WhatsApp role.")
     if len(set(users)) != len(users):
         frappe.throw("Each user can be listed only once.")
 

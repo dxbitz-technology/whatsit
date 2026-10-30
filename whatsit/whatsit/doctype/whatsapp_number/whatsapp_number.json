@@ -5,23 +5,35 @@
   "engine": "InnoDB",
   "istable": 0,
   "field_order": [
+    "sender_section",
     "display_name",
     "phone_number",
-    "title",
-    "meta_phone_number_id",
-    "waba_id",
-    "meta_app",
-    "access_token",
+    "sender_column",
     "enabled",
     "is_default",
-    "api_version",
+    "title",
     "default_slot",
+    "connection_section",
+    "meta_app",
+    "meta_phone_number_id",
+    "access_token",
+    "connection_column",
+    "waba_id",
+    "api_version",
     "connection_status",
+    "users_section",
+    "allowed_users",
+    "status_section",
     "last_tested_at",
-    "webhook_status",
-    "allowed_users"
+    "status_column",
+    "webhook_status"
   ],
   "fields": [
+    {
+      "fieldname": "sender_section",
+      "fieldtype": "Section Break",
+      "label": "Sender"
+    },
     {
       "fieldname": "display_name",
       "label": "Display Name",
@@ -35,40 +47,12 @@
       "fieldtype": "Data",
       "reqd": 1,
       "unique": 1,
-      "in_list_view": 1
+      "in_list_view": 1,
+      "length": 16
     },
     {
-      "fieldname": "title",
-      "label": "Title",
-      "fieldtype": "Data",
-      "read_only": 1
-    },
-    {
-      "fieldname": "meta_phone_number_id",
-      "label": "Meta Phone Number ID",
-      "fieldtype": "Data",
-      "reqd": 1,
-      "unique": 1
-    },
-    {
-      "fieldname": "waba_id",
-      "label": "Business Account ID",
-      "fieldtype": "Data",
-      "reqd": 1
-    },
-    {
-      "fieldname": "meta_app",
-      "label": "Meta App",
-      "fieldtype": "Link",
-      "options": "WhatsApp Meta App",
-      "reqd": 1
-    },
-    {
-      "fieldname": "access_token",
-      "label": "Access Token",
-      "fieldtype": "Password",
-      "reqd": 1,
-      "permlevel": 1
+      "fieldname": "sender_column",
+      "fieldtype": "Column Break"
     },
     {
       "fieldname": "enabled",
@@ -82,11 +66,11 @@
       "fieldtype": "Check"
     },
     {
-      "fieldname": "api_version",
-      "label": "API Version",
+      "fieldname": "title",
+      "label": "Title",
       "fieldtype": "Data",
-      "default": "v26.0",
-      "reqd": 1
+      "read_only": 1,
+      "hidden": 1
     },
     {
       "fieldname": "default_slot",
@@ -95,6 +79,52 @@
       "read_only": 1,
       "unique": 1,
       "hidden": 1
+    },
+    {
+      "fieldname": "connection_section",
+      "fieldtype": "Section Break",
+      "label": "Meta Connection"
+    },
+    {
+      "fieldname": "meta_app",
+      "label": "Meta App",
+      "fieldtype": "Link",
+      "options": "WhatsApp Meta App",
+      "reqd": 1
+    },
+    {
+      "fieldname": "meta_phone_number_id",
+      "label": "Meta Phone Number ID",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "unique": 1,
+      "length": 32
+    },
+    {
+      "fieldname": "access_token",
+      "label": "Access Token",
+      "fieldtype": "Password",
+      "reqd": 1,
+      "permlevel": 1
+    },
+    {
+      "fieldname": "connection_column",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "waba_id",
+      "label": "Business Account ID",
+      "fieldtype": "Data",
+      "reqd": 1,
+      "length": 32
+    },
+    {
+      "fieldname": "api_version",
+      "label": "API Version",
+      "fieldtype": "Data",
+      "default": "v26.0",
+      "reqd": 1,
+      "length": 10
     },
     {
       "fieldname": "connection_status",
@@ -106,16 +136,10 @@
       "in_list_view": 1
     },
     {
-      "fieldname": "last_tested_at",
-      "label": "Last Tested",
-      "fieldtype": "Datetime",
-      "read_only": 1
-    },
-    {
-      "fieldname": "webhook_status",
-      "label": "Webhook",
-      "fieldtype": "Data",
-      "read_only": 1
+      "fieldname": "users_section",
+      "fieldtype": "Section Break",
+      "label": "Sender Access",
+      "permlevel": 1
     },
     {
       "fieldname": "allowed_users",
@@ -123,6 +147,28 @@
       "fieldtype": "Table",
       "options": "WhatsApp Number User",
       "permlevel": 1
+    },
+    {
+      "fieldname": "status_section",
+      "fieldtype": "Section Break",
+      "label": "Webhook Activity",
+      "depends_on": "eval:doc.last_tested_at || doc.webhook_status"
+    },
+    {
+      "fieldname": "last_tested_at",
+      "label": "Last Tested",
+      "fieldtype": "Datetime",
+      "read_only": 1
+    },
+    {
+      "fieldname": "status_column",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "webhook_status",
+      "label": "Webhook",
+      "fieldtype": "Data",
+      "read_only": 1
     }
   ],
   "permissions": [
